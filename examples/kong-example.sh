@@ -138,4 +138,10 @@ set_load_balancing() {
     fi
 }
 
-"$@"
+# "$@"
+
+set_service
+set_limit_rate
+set_proxy_cache
+set_key_auth
+set_load_balancing
