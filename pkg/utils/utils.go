@@ -2,7 +2,6 @@ package utils
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 
 	"github.com/icza/dyno"
@@ -32,7 +31,6 @@ func AddValueToYaml(value interface{}, path ...interface{}) error {
 	}
 
 	for i := 1; i <= len(path); i++ {
-		fmt.Println(v)
 		if i == len(path) {
 			if err := dyno.Set(v, value, path...); err != nil {
 				return err

@@ -2,6 +2,8 @@
 
 set -ex
 
+# something wrong with quoted line
+sed -i -e 's#- http://etcd:2379#- "http://etcd:2379"#g' "repos/apisix-docker/example/apisix_conf/config.yaml"
 # config.yaml is read only in docker, so we need to rebuild apisix with docker compose
 docker-compose -f repos/apisix-docker/example/docker-compose.yml down
 docker-compose -f repos/apisix-docker/example/docker-compose.yml up -d

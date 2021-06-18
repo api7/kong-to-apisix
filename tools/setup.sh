@@ -8,9 +8,6 @@ fetch_docker_repos() {
         git clone https://github.com/apache/apisix-docker.git ${BASEDIR}/repos/apisix-docker --depth=1
     fi
 
-    # fix image error for now
-    sed -i -e 's#- http://etcd:2379#- "http://etcd:2379"#g' ${BASEDIR}"/repos/apisix-docker/example/apisix_conf/config.yaml"
-
     if [[ ! -d ${BASEDIR}"/repos/kong-docker" ]]; then
         git clone https://github.com/Kong/docker-kong.git ${BASEDIR}/repos/kong-docker --depth=1
     fi
@@ -28,20 +25,32 @@ setup_with_docker_compose() {
     docker-compose -f ${BASEDIR}/repos/apisix-docker/example/docker-compose.yml up -d
     docker-compose -f ${BASEDIR}/repos/kong-docker/compose/docker-compose.yml up -d
 
-    code=$(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080)
-    if [ $code -eq 404 ]; then
-        echo "apisix work as expected"
-    else
-        echo "apisix not work as expected"
-    fi
+    retries=10
+    count=0
+    while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080) -ne 404 ];
+    do
+        echo "Waiting for apisix setup" && sleep 1;
 
-    sleep 3
-    code=$(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001)
-    if [ $code -eq 404 ]; then
-        echo "kong work as expected"
-    else
-        echo "kong not work as expected"
-    fi
+        ((count=count+1))
+        if [ $count -gt ${retries} ]; then
+            printf "apisix not work as expected\n"
+            exit 1
+        fi
+    done
+    echo "apisix work as expected"
+
+    count=0
+    while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001) -ne 200 ];
+    do
+        echo "Waiting for kong setup" && sleep 1;
+
+        ((count=count+1))
+        if [ $count -gt ${retries} ]; then
+            printf "kong not work as expected\n"
+            exit 1
+        fi
+    done
+    echo "kong work as expected"
 }
 
 setup_with_docker_compose
