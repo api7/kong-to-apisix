@@ -8,6 +8,21 @@ sed -i -e 's#- http://etcd:2379#- "http://etcd:2379"#g' "repos/apisix-docker/exa
 docker-compose -f repos/apisix-docker/example/docker-compose.yml down
 docker-compose -f repos/apisix-docker/example/docker-compose.yml up -d
 
+retries=10
+count=0
+while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080) -ne 404 ];
+do
+    echo "Waiting for apisix setup" && sleep 1;
+
+    ((count=count+1))
+    if [ $count -gt ${retries} ]; then
+        printf "apisix not work as expected\n"
+        exit 1
+    fi
+done
+echo "apisix work as expected"
+
+
 # test key auth
 code=$(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://127.0.0.1:9080/mock)
 if [ $code -eq 401 ]; then
