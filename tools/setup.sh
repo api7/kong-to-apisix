@@ -22,35 +22,42 @@ setup_with_docker_compose() {
         exit 1
     fi
 
-    docker-compose -f ${BASEDIR}/repos/apisix-docker/example/docker-compose.yml up -d
-    docker-compose -f ${BASEDIR}/repos/kong-docker/compose/docker-compose.yml up -d
-
     retries=10
-    count=0
-    while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080) -ne 404 ];
-    do
-        echo "Waiting for apisix setup" && sleep 1;
+    if [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080) -eq 404 ]; then
+        echo "apisix work as expected"
+    else
+        docker-compose -f ${BASEDIR}/repos/apisix-docker/example/docker-compose.yml up -d
+        count=0
+        while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080) -ne 404 ];
+        do
+            echo "Waiting for apisix setup" && sleep 1;
 
-        ((count=count+1))
-        if [ $count -gt ${retries} ]; then
-            printf "apisix not work as expected\n"
-            exit 1
-        fi
-    done
-    echo "apisix work as expected"
+            ((count=count+1))
+            if [ $count -gt ${retries} ]; then
+                printf "apisix not work as expected\n"
+                exit 1
+            fi
+        done
+        echo "apisix work as expected"
+    fi
 
-    count=0
-    while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001) -ne 200 ];
-    do
-        echo "Waiting for kong setup" && sleep 1;
+    if [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001) -eq 200 ]; then
+        echo "kong work as expected"
+    else
+        docker-compose -f ${BASEDIR}/repos/kong-docker/compose/docker-compose.yml up -d
+        count=0
+        while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001) -ne 200 ];
+        do
+            echo "Waiting for kong setup" && sleep 1;
 
-        ((count=count+1))
-        if [ $count -gt ${retries} ]; then
-            printf "kong not work as expected\n"
-            exit 1
-        fi
-    done
-    echo "kong work as expected"
+            ((count=count+1))
+            if [ $count -gt ${retries} ]; then
+                printf "kong not work as expected\n"
+                exit 1
+            fi
+        done
+        echo "kong work as expected"
+    fi
 }
 
 setup_with_docker_compose

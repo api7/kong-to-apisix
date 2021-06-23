@@ -12,6 +12,4 @@
 *.out
 
 # Dependency directories (remove the comment below to include it)
-pkg/kong
-pkg/apisix
 repos

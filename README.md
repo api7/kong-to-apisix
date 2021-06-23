@@ -18,7 +18,7 @@
 
 3. Run migration tool
     ```shell
-    go run ./examples/demo.go
+    go run ./cmd/kong-to-apisix/demo.go
     ```
 
 4. Verify migration succeeds
