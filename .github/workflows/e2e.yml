@@ -21,7 +21,7 @@ jobs:
       - name: Install Go dependencies
         run: go get -t -v ./...
 
-      - name: Run dependencies
+      - name: Get dependencies
         run: bash ./tools/setup.sh
 
       - name: Run test
