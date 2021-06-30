@@ -30,7 +30,7 @@ setup_with_docker_compose() {
         count=0
         while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080) -ne 404 ];
         do
-            echo "Waiting for apisix setup" && sleep 1;
+            echo "Waiting for apisix setup" && sleep 2;
 
             ((count=count+1))
             if [ $count -gt ${retries} ]; then
@@ -48,7 +48,7 @@ setup_with_docker_compose() {
         count=0
         while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001) -ne 200 ];
         do
-            echo "Waiting for kong setup" && sleep 1;
+            echo "Waiting for kong setup" && sleep 2;
 
             ((count=count+1))
             if [ $count -gt ${retries} ]; then
