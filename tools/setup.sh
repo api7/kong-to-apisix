@@ -64,7 +64,7 @@ setup_with_docker_compose() {
         echo "kong work as expected"
     fi
 
-    if [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001) -eq 200 ]; then
+    if [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8088/get) -eq 200 ]; then
         echo "upstream work as expected"
     else
         docker run --name httpbin -d -p 8088:80 kennethreitz/httpbin
