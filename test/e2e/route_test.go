@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/apache/apisix-ingress-controller/pkg/apisix"
 	"github.com/globocom/gokong"
@@ -20,8 +21,9 @@ import (
 
 var _ = Describe("route", func() {
 	var (
-		apisixCli apisix.Cluster
-		kongCli   gokong.KongAdminClient
+		apisixCli    apisix.Cluster
+		kongCli      gokong.KongAdminClient
+		upstreamAddr string
 	)
 
 	BeforeEach(func() {
@@ -29,6 +31,10 @@ var _ = Describe("route", func() {
 		apisixCli, err = apisixcli.CreateAPISIXCli()
 		Expect(err).To(BeNil())
 		kongCli = gokong.NewClient(gokong.NewDefaultConfig())
+		upstreamAddr = "http://172.17.0.1:8088"
+		if os.Getenv("UPSTREAM") != "" {
+			upstreamAddr = os.Getenv("UPSTREAM")
+		}
 	})
 
 	JustBeforeEach(func() {

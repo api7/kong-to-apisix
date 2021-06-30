@@ -82,6 +82,9 @@ setup_with_docker_compose() {
             fi
         done
     fi
+
+    docker inspect -f '{{range.NetworkSettings.Networks}}{{.Gateway}}{{end}}' httpbin
+    export UPSTREAM=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.Gateway}}{{end}}' httpbin)
 }
 
 setup_with_docker_compose
