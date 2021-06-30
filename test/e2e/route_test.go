@@ -124,16 +124,16 @@ var _ = Describe("route", func() {
 })
 
 func compareResp(c *CompareCase) (bool, error) {
-	c.Url = apisixAddr + c.Path
-	apisixResp, err := getBody(c)
-	if err != nil {
-		return false, errors.Wrap(err, "apisix")
-	}
-
 	c.Url = kongAddr + c.Path
 	kongResp, err := getBody(c)
 	if err != nil {
 		return false, errors.Wrap(err, "kong")
+	}
+
+	c.Url = apisixAddr + c.Path
+	apisixResp, err := getBody(c)
+	if err != nil {
+		return false, errors.Wrap(err, "apisix")
 	}
 
 	GinkgoT().Logf("Kong: %s, APISIX: %s", kongResp, apisixResp)
