@@ -34,7 +34,9 @@ setup_with_docker_compose() {
 
             ((count=count+1))
             if [ $count -gt ${retries} ]; then
-                printf "apisix not work as expected\n"
+                echo $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080)
+                echo "apisix not work as expected"
+                docker ps -a
                 exit 1
             fi
         done
@@ -52,7 +54,9 @@ setup_with_docker_compose() {
 
             ((count=count+1))
             if [ $count -gt ${retries} ]; then
+                echo $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001)
                 printf "kong not work as expected\n"
+                docker ps -a
                 exit 1
             fi
         done
