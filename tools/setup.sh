@@ -37,6 +37,8 @@ setup_with_docker_compose() {
                 echo $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080)
                 echo "apisix not work as expected"
                 docker ps -a
+                docker logs example_etcd_1
+                docker logs example_apisix-dashboard_1
                 exit 1
             fi
         done
