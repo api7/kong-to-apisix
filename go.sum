@@ -403,8 +403,8 @@ github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVM
 github.com/ugorji/go/codec v1.1.7 h1:2SvQaVZ1ouYrrKKwoSk2pzd4A9evlKJb9oTL+OaLUSs=
 github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLYF3GoBXY=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
-github.com/yiyiyimu/apisix-ingress-controller v0.0.0-20210622025713-057789382b26 h1:t8p1/FDhF0lKVNYYPh7PMvWCNl/++FqZ0boPLrQO98E=
-github.com/yiyiyimu/apisix-ingress-controller v0.0.0-20210622025713-057789382b26/go.mod h1:TPCaG2l2bgTGDjVTV5DKfnHz6Nk9KeT08s6/V+v7HYY=
+github.com/yiyiyimu/apisix-ingress-controller v0.0.0-20210630025744-8b2326b443c8 h1:5fo3NNrycFKy0LIOAhuttYB6vmLtZ21iLOoHnl57tBw=
+github.com/yiyiyimu/apisix-ingress-controller v0.0.0-20210630025744-8b2326b443c8/go.mod h1:TPCaG2l2bgTGDjVTV5DKfnHz6Nk9KeT08s6/V+v7HYY=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=

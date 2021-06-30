@@ -6,10 +6,7 @@ fetch_docker_repos() {
     mkdir -p ${BASEDIR}/repos
     if [[ ! -d ${BASEDIR}"/repos/apisix-docker" ]]; then
         git clone https://github.com/apache/apisix-docker.git ${BASEDIR}/repos/apisix-docker --depth=1
-        ls -al ${BASEDIR}/repos/apisix-docker/example
-        ls -al ${BASEDIR}/repos/apisix-docker/example/etcd_data
         chmod 777 ${BASEDIR}/repos/apisix-docker/example/etcd_data
-        ls -al ${BASEDIR}/repos/apisix-docker/example/etcd_data
     fi
 
     if [[ ! -d ${BASEDIR}"/repos/kong-docker" ]]; then
