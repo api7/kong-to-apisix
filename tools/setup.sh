@@ -6,6 +6,7 @@ fetch_docker_repos() {
     mkdir -p ${BASEDIR}/repos
     if [[ ! -d ${BASEDIR}"/repos/apisix-docker" ]]; then
         git clone https://github.com/apache/apisix-docker.git ${BASEDIR}/repos/apisix-docker --depth=1
+        sed -i 's/apisix:2.6/apisix:2.7/g' ${BASEDIR}/repos/apisix-docker/example/docker-compose.yml
     fi
 
     if [[ ! -d ${BASEDIR}"/repos/kong-docker" ]]; then
