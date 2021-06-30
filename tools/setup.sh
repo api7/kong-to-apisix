@@ -38,8 +38,6 @@ setup_with_docker_compose() {
                 echo $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080)
                 echo "apisix not work as expected"
                 docker ps -a
-                docker logs example_etcd_1
-                docker logs example_apisix-dashboard_1
                 exit 1
             fi
         done
@@ -66,10 +64,23 @@ setup_with_docker_compose() {
         echo "kong work as expected"
     fi
 
-    if ! docker ps --format '{{.Names}}' | grep -w httpbin &> /dev/null; then
-        docker run --name httpbin -d -p 8088:80 kennethreitz/httpbin
-    else
+    if [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001) -eq 200 ]; then
         echo "upstream work as expected"
+    else
+        docker run --name httpbin -d -p 8088:80 kennethreitz/httpbin
+        count=0
+        while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8088/get) -ne 200 ];
+        do
+            echo "Waiting for httpbin setup" && sleep 2;
+
+            ((count=count+1))
+            if [ $count -gt ${retries} ]; then
+                echo $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8088/get)
+                printf "upstream not work as expected\n"
+                docker ps -a
+                exit 1
+            fi
+        done
     fi
 }
 
