@@ -20,12 +20,15 @@ func MigrateRoute(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) erro
 
 		apisixRoute := &v1.Route{
 			Metadata: v1.Metadata{
-				ID:   *r.Id,
-				Name: *r.Name,
+				ID: *r.Id,
 			},
 			UpstreamId: string(*r.Service),
 			// TODO: need to check if it's the same
 			Priority: *r.RegexPriority,
+		}
+
+		if r.Name != nil {
+			apisixRoute.Metadata.Name = *r.Name
 		}
 
 		// TODO: need to tweak between different rules of apisix and kong later
@@ -69,7 +72,13 @@ func MigrateRoute(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) erro
 			return err
 		}
 
-		fmt.Printf("migrate route %s succeeds\n", *r.Name)
+		var printName string
+		if r.Name != nil {
+			printName = *r.Name
+		} else {
+			printName = *r.Id
+		}
+		fmt.Printf("migrate route %s succeeds\n", printName)
 	}
 
 	return nil

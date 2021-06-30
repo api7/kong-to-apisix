@@ -58,6 +58,12 @@ setup_with_docker_compose() {
         done
         echo "kong work as expected"
     fi
+
+    if ! docker ps --format '{{.Names}}' | grep -w httpbin &> /dev/null; then
+        docker run --name httpbin -d -p 8088:80 kennethreitz/httpbin
+    else
+        echo "upstream work as expected"
+    fi
 }
 
 setup_with_docker_compose

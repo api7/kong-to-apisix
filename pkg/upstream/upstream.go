@@ -33,8 +33,7 @@ func MigrateUpstream(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) e
 		// TODO: gokong not support lbAlgorithm yet
 		apisixUpstream := &v1.Upstream{
 			Metadata: v1.Metadata{
-				ID:   *s.Id,
-				Name: *s.Name,
+				ID: *s.Id,
 			},
 			Type:    "roundrobin",
 			Scheme:  *s.Protocol,
@@ -44,6 +43,10 @@ func MigrateUpstream(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) e
 				Send:    *s.WriteTimeout / 1000,
 				Read:    *s.ReadTimeout / 1000,
 			},
+		}
+
+		if s.Name != nil {
+			apisixUpstream.Metadata.Name = *s.Name
 		}
 
 		var upstreamNodes []v1.UpstreamNode
@@ -103,7 +106,13 @@ func MigrateUpstream(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) e
 			return err
 		}
 
-		fmt.Printf("migrate service %s to upstream succeeds\n", *s.Name)
+		var printName string
+		if s.Name != nil {
+			printName = *s.Name
+		} else {
+			printName = *s.Id
+		}
+		fmt.Printf("migrate service %s to upstream succeeds\n", printName)
 	}
 
 	return nil
