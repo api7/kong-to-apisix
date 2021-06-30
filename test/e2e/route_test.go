@@ -107,6 +107,13 @@ var _ = Describe("route", func() {
 		Expect(err).To(BeNil())
 
 		same, err := compareResp(&CompareCase{
+			Path:             "/get/get",
+			ExpectStatusCode: http.StatusNotFound,
+		})
+		Expect(err).To(BeNil())
+		Expect(same).To(BeTrue())
+
+		same, err = compareResp(&CompareCase{
 			Path:    "/get/get",
 			Headers: map[string]string{"Host": "foo.com"},
 		})
@@ -120,13 +127,13 @@ func compareResp(c *CompareCase) (bool, error) {
 	c.Url = apisixAddr + c.Path
 	apisixResp, err := getBody(c)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "apisix")
 	}
 
 	c.Url = kongAddr + c.Path
 	kongResp, err := getBody(c)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "kong")
 	}
 
 	GinkgoT().Logf("Kong: %s, APISIX: %s", kongResp, apisixResp)
@@ -151,6 +158,10 @@ func getBody(c *CompareCase) (string, error) {
 		return "", errors.Wrap(err, "http get error")
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == c.ExpectStatusCode {
+		return "", nil
+	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
