@@ -20,9 +20,8 @@ import (
 
 var _ = Describe("route", func() {
 	var (
-		apisixCli    apisix.Cluster
-		kongCli      gokong.KongAdminClient
-		upstreamAddr string
+		apisixCli apisix.Cluster
+		kongCli   gokong.KongAdminClient
 	)
 
 	BeforeEach(func() {
