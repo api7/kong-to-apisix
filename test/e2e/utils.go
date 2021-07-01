@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	apisixAddr = "http://127.0.0.1:9080"
-	kongAddr   = "http://127.0.0.1:8000"
+	upstreamAddr = "http://172.17.0.1:8088"
+	apisixAddr   = "http://127.0.0.1:9080"
+	kongAddr     = "http://127.0.0.1:8000"
 )
 
 type TestCase struct {
