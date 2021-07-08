@@ -2,15 +2,23 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 
 	"github.com/apache/apisix-ingress-controller/pkg/apisix"
 	"github.com/globocom/gokong"
+	"github.com/icza/dyno"
+	. "github.com/onsi/ginkgo"
+	"github.com/pkg/errors"
 )
 
 var (
-	upstreamAddr = "http://172.17.0.1:8088"
-	apisixAddr   = "http://127.0.0.1:9080"
-	kongAddr     = "http://127.0.0.1:8000"
+	upstreamAddr  = "http://172.17.0.1:8088"
+	upstreamAddr2 = "http://172.17.0.1:8001"
+	apisixAddr    = "http://127.0.0.1:9080"
+	kongAddr      = "http://127.0.0.1:8000"
 )
 
 type TestCase struct {
@@ -164,4 +172,121 @@ func defaultRoute() *gokong.RouteRequest {
 		StripPath:     gokong.Bool(true),
 		PreserveHost:  gokong.Bool(true),
 	}
+}
+
+func defaultUpstream() *gokong.UpstreamRequest {
+	return &gokong.UpstreamRequest{
+		HashOn:           "none",
+		HashFallback:     "none",
+		HashOnCookiePath: "/",
+		Slots:            10000,
+		HealthChecks: &gokong.UpstreamHealthCheck{
+			Active: &gokong.UpstreamHealthCheckActive{
+				Type:        "http",
+				Concurrency: 10,
+				Unhealthy: &gokong.ActiveUnhealthy{
+					Interval:     0,
+					TcpFailures:  0,
+					HttpStatuses: []int{429, 404, 500, 501, 502, 503, 504, 505},
+					HttpFailures: 0,
+					Timeouts:     0,
+				},
+				Healthy: &gokong.ActiveHealthy{
+					HttpStatuses: []int{200, 302},
+					Interval:     0,
+					Successes:    0,
+				},
+			},
+		},
+	}
+}
+
+func defaultTarget() *gokong.TargetRequest {
+	return &gokong.TargetRequest{
+		Weight: 100,
+	}
+}
+
+func compareURL(c *CompareCase) (bool, error) {
+	kongResp, apisixResp, err := getResp(c)
+	if err != nil {
+		return false, err
+	}
+
+	kongURL, err := getFromJson(kongResp, "url")
+	if err != nil {
+		return false, err
+	}
+	apisixURL, err := getFromJson(apisixResp, "url")
+	if err != nil {
+		return false, err
+	}
+
+	return kongURL == apisixURL, nil
+}
+
+func getResp(c *CompareCase) ([]byte, []byte, error) {
+	c.Url = apisixAddr + c.Path
+	apisixResp, err := getBody(c)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "apisix")
+	}
+
+	c.Url = kongAddr + c.Path
+	kongResp, err := getBody(c)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "kong")
+	}
+
+	GinkgoT().Logf("Kong: %s, APISIX: %s", kongResp, apisixResp)
+	return kongResp, apisixResp, nil
+}
+
+func getBody(c *CompareCase) ([]byte, error) {
+	req, err := http.NewRequest("GET", c.Url, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "http new request error")
+	}
+	for k, v := range c.Headers {
+		if k == "Host" {
+			req.Host = c.Headers["Host"]
+		} else {
+			req.Header.Set(k, v)
+		}
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "http get error")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == c.ExpectStatusCode {
+		return nil, nil
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "read body error")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return []byte(fmt.Sprintf("%d ", resp.StatusCode)), errors.Errorf("read body error: %s", string(body))
+	}
+
+	return body, err
+}
+
+func getFromJson(body []byte, key string) (string, error) {
+	v := make(map[string]interface{})
+	err := json.Unmarshal(body, &v)
+	if err != nil {
+		return "", errors.Wrap(err, "unmarshal error")
+	}
+
+	value, err := dyno.Get(v, key)
+	if err != nil {
+		return "", errors.Wrap(err, "get url from interface error")
+	}
+	return value.(string), nil
 }

@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/apache/apisix-ingress-controller/pkg/apisix"
 	v1 "github.com/apache/apisix-ingress-controller/pkg/types/apisix/v1"
 	"github.com/globocom/gokong"
+	"github.com/pkg/errors"
 )
 
 func MigrateUpstream(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error {
@@ -71,11 +73,11 @@ func MigrateUpstream(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) e
 
 			for _, t := range targets {
 				u, err := url.Parse(*t.Target)
-				if err != nil {
-					return err
+				if err != nil && !strings.Contains(err.Error(), "first path segment in URL cannot contain colon") {
+					return errors.Wrap(err, "url parse")
 				}
 
-				if u.Host == "" {
+				if u == nil || u.Host == "" {
 					u, err = url.ParseRequestURI("http://" + *t.Target)
 					if err != nil {
 						return err

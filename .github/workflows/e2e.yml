@@ -26,6 +26,7 @@ jobs:
 
       - name: Run test
         run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+            #ginkgo -r --v --progress -cover -coverprofile=coverage.txt --trace
 
       - name: Upload coverage to Codecov
         run: bash <(curl -s https://codecov.io/bash)
