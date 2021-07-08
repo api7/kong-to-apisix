@@ -2,6 +2,8 @@
 
 Kong-To-APISIX is a migration tool helping you migrate configuration data of your API gateway from Kong to Apache APISIX. It aims to help people to dip their toes in APISIX and also reduce the operations cost.
 
+Only tested with APISIX 2.7 and Kong 2.4 for now.
+
 ## How to use
 1. Setup APISIX and Kong, if you don't have them
 
