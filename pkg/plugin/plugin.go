@@ -155,8 +155,7 @@ func keyAuth(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient, p *gokong
 	}
 
 	if p.ConsumerId == nil && p.ServiceId == nil && p.RouteId != nil {
-
-		r, err := apisixCli.Route().Get(context.Background(), string(*p.RouteId))
+		r, err := apisixCli.Route().GetByID(context.Background(), string(*p.RouteId))
 		if err != nil {
 			return err
 		}
@@ -213,12 +212,4 @@ func updateKeyAuthForConsumers(apisixCli apisix.Cluster, kongCli gokong.KongAdmi
 		}
 	}
 	return nil
-}
-
-func getKongRouteNameWithId(kongCli gokong.KongAdminClient, id string) (string, error) {
-	route, err := kongCli.Routes().GetById(id)
-	if err != nil {
-		return "", err
-	}
-	return *route.Name, nil
 }
