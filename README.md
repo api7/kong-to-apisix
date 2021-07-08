@@ -42,8 +42,7 @@ Kong-To-APISIX is a migration tool helping you migrate configuration data of you
 
 3. Run migration tool
     ```shell
-    make build
-    ./bin/kta
+    go run ./cmd/kong-to-apisix/main.go
     ```
 
 4. Verify migration succeeds
