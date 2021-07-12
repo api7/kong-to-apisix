@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	apisixBaseURL  = "http://127.0.0.1:9080/apisix/admin"
+	apisixBaseURL  = "http://127.0.0.1:9080"
 	apisixAdminKey = "edd1c9f034335f136f87ad84b625c8f1"
 )
 
@@ -26,14 +26,15 @@ func CreateAPISIXCli() (apisix.Cluster, error) {
 	apisixOptions := &apisix.ClusterOptions{
 		Name:     clusterName,
 		AdminKey: apisixAdminKey,
-		BaseURL:  apisixBaseURL,
 	}
 	if os.Getenv(EnvAPISIXAdminToken) != "" {
 		apisixOptions.AdminKey = strings.TrimRight(os.Getenv(EnvAPISIXAdminToken), "/")
 	}
+	apisixAdminURL := apisixBaseURL
 	if os.Getenv(EnvAPISIXAdminHostAddress) != "" {
-		apisixOptions.BaseURL = strings.TrimRight(os.Getenv(EnvAPISIXAdminHostAddress), "/")
+		apisixAdminURL = strings.TrimRight(os.Getenv(EnvAPISIXAdminHostAddress), "/")
 	}
+	apisixOptions.BaseURL = apisixAdminURL + "/apisix/admin"
 	apisixCli.AddCluster(apisixOptions)
 	return apisixCli.Cluster(clusterName), nil
 }

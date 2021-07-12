@@ -1,3 +1,7 @@
+.PHONY: test
 test:
-	./tools/setup.sh
-	go test -v -count=1 -race -cover -coverprofile=coverage.txt -covermode=atomic ./...
+	ginkgo -r --v --progress --trace -cover -coverprofile=coverage.txt -covermode=atomic
+
+.PHONY: build
+build:
+	go build -o bin/kta ./cmd/kong-to-apisix/main.go

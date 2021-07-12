@@ -6,6 +6,7 @@ fetch_docker_repos() {
     mkdir -p ${BASEDIR}/repos
     if [[ ! -d ${BASEDIR}"/repos/apisix-docker" ]]; then
         git clone https://github.com/apache/apisix-docker.git ${BASEDIR}/repos/apisix-docker --depth=1
+        chmod 777 ${BASEDIR}/repos/apisix-docker/example/etcd_data
     fi
 
     if [[ ! -d ${BASEDIR}"/repos/kong-docker" ]]; then
@@ -30,11 +31,13 @@ setup_with_docker_compose() {
         count=0
         while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080) -ne 404 ];
         do
-            echo "Waiting for apisix setup" && sleep 1;
+            echo "Waiting for apisix setup" && sleep 2;
 
             ((count=count+1))
             if [ $count -gt ${retries} ]; then
-                printf "apisix not work as expected\n"
+                echo $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080)
+                echo "apisix not work as expected"
+                docker ps -a
                 exit 1
             fi
         done
@@ -48,15 +51,36 @@ setup_with_docker_compose() {
         count=0
         while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001) -ne 200 ];
         do
-            echo "Waiting for kong setup" && sleep 1;
+            echo "Waiting for kong setup" && sleep 2;
 
             ((count=count+1))
             if [ $count -gt ${retries} ]; then
+                echo $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001)
                 printf "kong not work as expected\n"
+                docker ps -a
                 exit 1
             fi
         done
         echo "kong work as expected"
+    fi
+
+    if [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8088/get) -eq 200 ]; then
+        echo "upstream work as expected"
+    else
+        docker run --name httpbin -d -p 8088:80 kennethreitz/httpbin
+        count=0
+        while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8088/get) -ne 200 ];
+        do
+            echo "Waiting for httpbin setup" && sleep 2;
+
+            ((count=count+1))
+            if [ $count -gt ${retries} ]; then
+                echo $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8088/get)
+                printf "upstream not work as expected\n"
+                docker ps -a
+                exit 1
+            fi
+        done
     fi
 }
 
