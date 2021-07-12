@@ -6,8 +6,8 @@ import (
 
 	"github.com/apache/apisix-ingress-controller/pkg/apisix"
 	v1 "github.com/apache/apisix-ingress-controller/pkg/types/apisix/v1"
+	"github.com/api7/kongtoapisix/pkg/utils"
 	"github.com/globocom/gokong"
-	"github.com/yiyiyimu/kongtoapisix/pkg/utils"
 )
 
 var funcMap = map[string]func(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient, p *gokong.Plugin) error{

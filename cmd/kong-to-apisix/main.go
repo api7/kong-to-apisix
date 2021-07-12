@@ -1,12 +1,12 @@
 package main
 
 import (
+	"github.com/api7/kongtoapisix/pkg/apisixcli"
+	"github.com/api7/kongtoapisix/pkg/consumer"
+	"github.com/api7/kongtoapisix/pkg/plugin"
+	"github.com/api7/kongtoapisix/pkg/route"
+	"github.com/api7/kongtoapisix/pkg/upstream"
 	"github.com/globocom/gokong"
-	"github.com/yiyiyimu/kongtoapisix/pkg/apisixcli"
-	"github.com/yiyiyimu/kongtoapisix/pkg/consumer"
-	"github.com/yiyiyimu/kongtoapisix/pkg/plugin"
-	"github.com/yiyiyimu/kongtoapisix/pkg/route"
-	"github.com/yiyiyimu/kongtoapisix/pkg/upstream"
 )
 
 func main() {
