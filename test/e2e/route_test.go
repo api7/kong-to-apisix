@@ -13,9 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	"github.com/yiyiyimu/kongtoapisix/pkg/apisixcli"
-	"github.com/yiyiyimu/kongtoapisix/pkg/route"
-	"github.com/yiyiyimu/kongtoapisix/pkg/upstream"
+	"github.com/api7/kongtoapisix/pkg/kong"
 )
 
 var _ = Describe("route", func() {
@@ -23,13 +21,6 @@ var _ = Describe("route", func() {
 		apisixCli apisix.Cluster
 		kongCli   gokong.KongAdminClient
 	)
-
-	BeforeEach(func() {
-		var err error
-		apisixCli, err = apisixcli.CreateAPISIXCli()
-		Expect(err).To(BeNil())
-		kongCli = gokong.NewClient(gokong.NewDefaultConfig())
-	})
 
 	JustBeforeEach(func() {
 		err := purgeAll(apisixCli, kongCli)
@@ -48,10 +39,10 @@ var _ = Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		Expect(err).To(BeNil())
 
-		err = upstream.MigrateUpstream(apisixCli, kongCli)
+		err = kong.MigrateUpstream(apisixCli, kongCli)
 		Expect(err).To(BeNil())
 
-		err = route.MigrateRoute(apisixCli, kongCli)
+		err = kong.MigrateRoute(apisixCli, kongCli)
 		Expect(err).To(BeNil())
 
 		same, err := compareResp(&CompareCase{
@@ -74,10 +65,10 @@ var _ = Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		Expect(err).To(BeNil())
 
-		err = upstream.MigrateUpstream(apisixCli, kongCli)
+		err = kong.MigrateUpstream(apisixCli, kongCli)
 		Expect(err).To(BeNil())
 
-		err = route.MigrateRoute(apisixCli, kongCli)
+		err = kong.MigrateRoute(apisixCli, kongCli)
 		Expect(err).To(BeNil())
 
 		same, err := compareResp(&CompareCase{
@@ -100,10 +91,10 @@ var _ = Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		Expect(err).To(BeNil())
 
-		err = upstream.MigrateUpstream(apisixCli, kongCli)
+		err = kong.MigrateUpstream(apisixCli, kongCli)
 		Expect(err).To(BeNil())
 
-		err = route.MigrateRoute(apisixCli, kongCli)
+		err = kong.MigrateRoute(apisixCli, kongCli)
 		Expect(err).To(BeNil())
 
 		same, err := compareResp(&CompareCase{

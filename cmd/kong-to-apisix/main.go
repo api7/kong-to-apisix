@@ -1,37 +1,23 @@
 package main
 
 import (
-	"github.com/api7/kongtoapisix/pkg/apisixcli"
-	"github.com/api7/kongtoapisix/pkg/consumer"
-	"github.com/api7/kongtoapisix/pkg/plugin"
-	"github.com/api7/kongtoapisix/pkg/route"
-	"github.com/api7/kongtoapisix/pkg/upstream"
-	"github.com/globocom/gokong"
+	"io/ioutil"
+
+	"github.com/api7/kongtoapisix/pkg/apisix"
+	"github.com/api7/kongtoapisix/pkg/kong"
+	"gopkg.in/yaml.v2"
 )
 
 func main() {
-	apisixCli, err := apisixcli.CreateAPISIXCli()
+	apisixConfig := &apisix.APISIX{}
+	if err := kong.Migrate(apisixConfig); err != nil {
+		panic("migrate failed: " + err.Error())
+	}
+	apisixYaml, err := yaml.Marshal(apisixConfig)
 	if err != nil {
 		panic(err)
 	}
-	kongCli := gokong.NewClient(gokong.NewDefaultConfig())
-
-	err = upstream.MigrateUpstream(apisixCli, kongCli)
-	if err != nil {
-		panic("migrate service failed: " + err.Error())
-	}
-
-	err = route.MigrateRoute(apisixCli, kongCli)
-	if err != nil {
-		panic("migrate route failed: " + err.Error())
-	}
-	err = consumer.MigrateConsumer(apisixCli, kongCli)
-	if err != nil {
-		panic("migrate consumer failed: " + err.Error())
-	}
-
-	err = plugin.MigratePlugin(apisixCli, kongCli)
-	if err != nil {
-		panic("migrate plugin failed: " + err.Error())
+	if err := ioutil.WriteFile("apisix.yaml", apisixYaml, 0644); err != nil {
+		panic(err)
 	}
 }

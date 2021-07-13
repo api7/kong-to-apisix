@@ -10,9 +10,11 @@ type KongConfig struct {
 type Routes []struct {
 	HTTPSRedirectStatusCode int      `yaml:"https_redirect_status_code"`
 	Name                    string   `yaml:"name"`
+	Hosts                   []string `yaml:"hosts"`
+	Methods                 []string `yaml:"methods"`
 	PathHandling            string   `yaml:"path_handling"`
 	Paths                   []string `yaml:"paths"`
-	Plugins                 Plugins  `yaml:"plugins"`
+	Plugins                 Plugins  `yaml:"plugins,omitempty"`
 	PreserveHost            bool     `yaml:"preserve_host"`
 	Protocols               []string `yaml:"protocols"`
 	RegexPriority           int      `yaml:"regex_priority"`
@@ -22,18 +24,22 @@ type Routes []struct {
 }
 
 type Services []struct {
-	ConnectTimeout int    `yaml:"connect_timeout"`
-	Host           string `yaml:"host"`
-	Name           string `yaml:"name"`
-	Port           int    `yaml:"port"`
-	Protocol       string `yaml:"protocol"`
-	ReadTimeout    int    `yaml:"read_timeout"`
-	Retries        int    `yaml:"retries"`
-	Routes         Routes `yaml:"routes"`
-	WriteTimeout   int    `yaml:"write_timeout"`
+	ID             string  `yaml:"id,omitempty"`
+	ConnectTimeout int     `yaml:"connect_timeout"`
+	Host           string  `yaml:"host"`
+	Name           string  `yaml:"name"`
+	Port           int     `yaml:"port"`
+	Protocol       string  `yaml:"protocol"`
+	ReadTimeout    int     `yaml:"read_timeout"`
+	Retries        int     `yaml:"retries"`
+	Routes         Routes  `yaml:"routes"`
+	WriteTimeout   int     `yaml:"write_timeout"`
+	Plugins        Plugins `yaml:"Plugins,omitempty"`
 }
 
-type Upstreams []struct {
+type Upstreams []Upstream
+
+type Upstream struct {
 	Algorithm        string       `yaml:"algorithm"`
 	HashFallback     string       `yaml:"hash_fallback"`
 	HashOn           string       `yaml:"hash_on"`
@@ -42,6 +48,7 @@ type Upstreams []struct {
 	Name             string       `yaml:"name"`
 	Slots            int          `yaml:"slots"`
 	Targets          Targets      `yaml:"targets"`
+	Plugins          Plugins      `yaml:"Plugins,omitempty"`
 }
 
 type Targets []struct {
@@ -86,13 +93,18 @@ type Healthchecks struct {
 }
 
 type Consumers []struct {
-	CustomId string `json:"custom_id,omitempty" yaml:"custom_id,omitempty"`
-	Username string `json:"username,omitempty" yaml:"username,omitempty"`
+	CustomId           string `yaml:"custom_id,omitempty"`
+	Username           string `yaml:"username,omitempty"`
+	KeyAuthCredentials []struct {
+		Key string `yaml:"key"`
+	} `yaml:"keyauth_credentials,omitempty"`
 }
 
-type Plugins []struct {
-	Name     string                 `json:"name" yaml:"name"`
-	Config   map[string]interface{} `json:"config,omitempty" yaml:"config,omitempty"`
-	Enabled  bool                   `json:"enabled,omitempty" yaml:"enabled,omitempty"`
-	Protocol []string               `json:"protocols,omitempty" yaml:"protocol,omitempty"`
+type Plugins []Plugin
+
+type Plugin struct {
+	Name     string                 `yaml:"name"`
+	Config   map[string]interface{} `yaml:"config,omitempty"`
+	Enabled  bool                   `yaml:"enabled,omitempty"`
+	Protocol []string               `yaml:"protocol,omitempty"`
 }
