@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/api7/kongtoapisix/pkg/apisix"
 	"github.com/api7/kongtoapisix/pkg/kong"
+	"github.com/api7/kongtoapisix/pkg/utils"
 )
 
 func main() {
@@ -17,7 +18,7 @@ func main() {
 	if err := apisix.WriteToFile(apisixConfig); err != nil {
 		panic(err)
 	}
-	if err := apisix.EnableAPISIXStandalone(); err != nil {
+	if err := apisix.EnableAPISIXStandalone(utils.ConfigFilePath); err != nil {
 		panic(err)
 	}
 }

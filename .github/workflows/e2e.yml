@@ -21,7 +21,7 @@ jobs:
       - name: Install Go dependencies
         run: |
           go get -t -v ./...
-          go get -u github.com/onsi/ginkgo/ginkgo
+          go get github.com/onsi/ginkgo/ginkgo
           sudo cp ~/go/bin/ginkgo /usr/local/bin
 
       - name: Setup test environment

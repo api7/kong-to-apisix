@@ -22,6 +22,7 @@ func MigrateRoute(kongConfig *KongConfig) (*[]v1.Route, error) {
 				UpstreamId: s.ID,
 				// TODO: need to check if it's the same
 				Priority: r.RegexPriority,
+				Plugins:  v1.Plugins{},
 			}
 
 			if r.Name != "" {
@@ -64,7 +65,7 @@ func MigrateRoute(kongConfig *KongConfig) (*[]v1.Route, error) {
 			}
 			apisixRoute.Methods = methods
 
-			plugins := v1.Plugins{}
+			plugins := apisixRoute.Plugins
 			for _, p := range r.Plugins {
 				if f, ok := pluginMap[p.Name]; ok {
 					if p.Enabled {
@@ -91,9 +92,7 @@ func addProxyRewrite(route *v1.Route) error {
 	pluginConfig := make(map[string]interface{})
 	pluginConfig["regex_uri"] = []string{fmt.Sprintf(`^%s/?(.*)`, route.Uri[:len(route.Uri)-1]), "/$1"}
 
-	route.Plugins = v1.Plugins{
-		"proxy-rewrite": pluginConfig,
-	}
+	route.Plugins["proxy-rewrite"] = pluginConfig
 
 	return nil
 }

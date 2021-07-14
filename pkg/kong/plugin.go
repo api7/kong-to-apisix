@@ -19,8 +19,8 @@ func proxyCache(p Plugin) (v1.Plugins, error) {
 	pluginConfig := make(map[string]interface{})
 	pluginConfig["cache_method"] = p.Config["request_method"]
 	pluginConfig["cache_http_status"] = p.Config["response_code"]
-	if cacheTTL, ok := p.Config["cache_ttl"].(float64); ok {
-		err := utils.AddValueToYaml(fmt.Sprintf("%v", int(cacheTTL))+"s", "apisix", "proxy_cache", "cache_ttl")
+	if cacheTTL, ok := p.Config["cache_ttl"].(int); ok {
+		err := utils.AddValueToYaml(utils.ConfigFilePath, fmt.Sprintf("%v", cacheTTL)+"s", "apisix", "proxy_cache", "cache_ttl")
 		if err != nil {
 			return nil, err
 		}

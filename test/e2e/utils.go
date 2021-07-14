@@ -2,15 +2,21 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 
+	"github.com/api7/kongtoapisix/pkg/apisix"
+	"github.com/api7/kongtoapisix/pkg/kong"
 	"github.com/globocom/gokong"
 	"github.com/kong/deck/dump"
 	"github.com/kong/deck/file"
 	"github.com/kong/deck/state"
 	"github.com/kong/deck/utils"
+	"github.com/onsi/ginkgo"
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -141,7 +147,7 @@ func defaultRoute() *gokong.RouteRequest {
 	}
 }
 
-func dumpkong() ([]byte, error) {
+func dumpKong() ([]byte, error) {
 	rootConfig := utils.KongClientConfig{
 		Address: "http://localhost:8001",
 	}
@@ -180,4 +186,40 @@ func dumpkong() ([]byte, error) {
 	os.Stdout = tmpStdout
 
 	return out, nil
+}
+
+func testMigrate() error {
+	kongConfigBytes, err := dumpKong()
+	if err != nil {
+		return err
+	}
+	var kongConfig *kong.KongConfig
+	err = yaml.Unmarshal(kongConfigBytes, &kongConfig)
+	if err != nil {
+		return err
+	}
+
+	prettier, err := json.MarshalIndent(kongConfig, "", "\t")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(ginkgo.GinkgoWriter, "kong yaml: %s\n", string(prettier))
+
+	apisixConfig, err := kong.Migrate(kongConfig)
+	if err != nil {
+		return err
+	}
+
+	prettier, err = json.MarshalIndent(apisixConfig, "", "\t")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(ginkgo.GinkgoWriter, "apisix yaml: %s\n", string(prettier))
+
+	if err := apisix.WriteToFile(apisixConfig); err != nil {
+		return err
+	}
+	// wait one second to make new config works
+	time.Sleep(1500 * time.Millisecond)
+	return nil
 }

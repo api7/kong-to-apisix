@@ -11,11 +11,11 @@ import (
 
 var yamlEndFlag = []byte("#END")
 
-func EnableAPISIXStandalone() error {
-	if err := utils.AddValueToYaml(false, "apisix", "enable_admin"); err != nil {
+func EnableAPISIXStandalone(filePath string) error {
+	if err := utils.AddValueToYaml(filePath, false, "apisix", "enable_admin"); err != nil {
 		return err
 	}
-	if err := utils.AddValueToYaml("yaml", "apisix", "config_center"); err != nil {
+	if err := utils.AddValueToYaml(filePath, "yaml", "apisix", "config_center"); err != nil {
 		return err
 	}
 	return nil

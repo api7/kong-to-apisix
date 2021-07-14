@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"io/ioutil"
 
 	"github.com/icza/dyno"
@@ -13,11 +14,11 @@ var (
 		"round-robin":        "roundrobin",
 		"consistent-hashing": "chash",
 	}
-	configFilePath = "./repos/apisix-docker/example/apisix_conf/config.yaml"
+	ConfigFilePath = "repos/apisix-docker/example/apisix_conf/config.yaml"
 )
 
-func AddValueToYaml(value interface{}, path ...interface{}) error {
-	yamlFile, err := ioutil.ReadFile(configFilePath)
+func AddValueToYaml(filePath string, value interface{}, path ...interface{}) error {
+	yamlFile, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return err
 	}
@@ -52,7 +53,11 @@ func AddValueToYaml(value interface{}, path ...interface{}) error {
 	if err != nil {
 		return err
 	}
-	ioutil.WriteFile(configFilePath, out, 0644)
+	// wait till new lua-tinyyaml in newer
+	oldEtcdAddr := "http://etcd:2379"
+	newEtcdAddr := "\"http://etcd:2379\""
+	out = bytes.Replace(out, []byte(oldEtcdAddr), []byte(newEtcdAddr), 1)
+	ioutil.WriteFile(filePath, out, 0644)
 
 	return nil
 }

@@ -11,14 +11,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-
-	"github.com/api7/kongtoapisix/pkg/kong"
 )
 
 var _ = Describe("route", func() {
 	var kongCli gokong.KongAdminClient
 
 	JustBeforeEach(func() {
+		kongCli = gokong.NewClient(gokong.NewDefaultConfig())
 		err := purgeAll(kongCli)
 		Expect(err).To(BeNil())
 	})
@@ -35,10 +34,7 @@ var _ = Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		Expect(err).To(BeNil())
 
-		err = kong.MigrateUpstream(apisixCli, kongCli)
-		Expect(err).To(BeNil())
-
-		err = kong.MigrateRoute(apisixCli, kongCli)
+		err = testMigrate()
 		Expect(err).To(BeNil())
 
 		same, err := compareResp(&CompareCase{
@@ -61,10 +57,7 @@ var _ = Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		Expect(err).To(BeNil())
 
-		err = kong.MigrateUpstream(apisixCli, kongCli)
-		Expect(err).To(BeNil())
-
-		err = kong.MigrateRoute(apisixCli, kongCli)
+		err = testMigrate()
 		Expect(err).To(BeNil())
 
 		same, err := compareResp(&CompareCase{
@@ -87,10 +80,7 @@ var _ = Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		Expect(err).To(BeNil())
 
-		err = kong.MigrateUpstream(apisixCli, kongCli)
-		Expect(err).To(BeNil())
-
-		err = kong.MigrateRoute(apisixCli, kongCli)
+		err = testMigrate()
 		Expect(err).To(BeNil())
 
 		same, err := compareResp(&CompareCase{
@@ -162,7 +152,7 @@ func getBody(c *CompareCase) (string, error) {
 	v := make(map[string]interface{})
 	err = json.Unmarshal(body, &v)
 	if err != nil {
-		return "", errors.Wrap(err, "unmarshal error")
+		return "", errors.Wrapf(err, "unmarshal error: %s", string(body))
 	}
 
 	value, err := dyno.Get(v, "url")
