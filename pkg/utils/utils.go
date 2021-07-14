@@ -1,7 +1,6 @@
-package kong
+package utils
 
 import (
-	"errors"
 	"io/ioutil"
 
 	"github.com/icza/dyno"
@@ -14,8 +13,7 @@ var (
 		"round-robin":        "roundrobin",
 		"consistent-hashing": "chash",
 	}
-	configFilePath        = "./repos/apisix-docker/example/apisix_conf/config.yaml"
-	ErrMixedCommentStyles = errors.New("unexpected non-empty object")
+	configFilePath = "./repos/apisix-docker/example/apisix_conf/config.yaml"
 )
 
 func AddValueToYaml(value interface{}, path ...interface{}) error {

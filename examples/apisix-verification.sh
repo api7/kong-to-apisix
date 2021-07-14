@@ -32,7 +32,7 @@ fi
 
 # test proxy cache
 curl -k -i -s  -o /dev/null http://127.0.0.1:9080/mock -H "apikey: apikey" -H "Host: mockbin.org"
-hit=$(ca | grep "Apisix-Cache-Status" | awk '{print $2}' | tr -d '\r')
+hit=$(curl -i -s -X GET http://127.0.0.1:9080/mock -H "apikey: apikey" -H "Host: mockbin.org" | grep "Apisix-Cache-Status" | awk '{print $2}' | tr -d '\r')
 
 if [ "$hit" == "HIT" ]; then
     echo "proxy-cache take effect"

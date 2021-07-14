@@ -1,7 +1,16 @@
 package e2e
 
 import (
+	"context"
+	"fmt"
+	"io/ioutil"
+	"os"
+
 	"github.com/globocom/gokong"
+	"github.com/kong/deck/dump"
+	"github.com/kong/deck/file"
+	"github.com/kong/deck/state"
+	"github.com/kong/deck/utils"
 )
 
 var (
@@ -130,4 +139,45 @@ func defaultRoute() *gokong.RouteRequest {
 		StripPath:     gokong.Bool(true),
 		PreserveHost:  gokong.Bool(true),
 	}
+}
+
+func dumpkong() ([]byte, error) {
+	rootConfig := utils.KongClientConfig{
+		Address: "http://localhost:8001",
+	}
+	wsClient, err := utils.GetKongClient(rootConfig)
+	if err != nil {
+		return nil, err
+	}
+	dumpConfig := dump.Config{}
+
+	rawState, err := dump.Get(context.Background(), wsClient, dumpConfig)
+	if err != nil {
+		return nil, fmt.Errorf("reading configuration from Kong: %w", err)
+	}
+	ks, err := state.Get(rawState)
+	if err != nil {
+		return nil, fmt.Errorf("building state: %w", err)
+	}
+
+	tmpStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err = file.KongStateToFile(ks, file.WriteConfig{
+		SelectTags: dumpConfig.SelectorTags,
+		Workspace:  "",
+		Filename:   "-",
+		FileFormat: "YAML",
+		WithID:     false,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	w.Close()
+	out, _ := ioutil.ReadAll(r)
+	os.Stdout = tmpStdout
+
+	return out, nil
 }

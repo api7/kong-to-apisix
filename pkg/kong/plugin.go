@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	v1 "github.com/apache/apisix-ingress-controller/pkg/types/apisix/v1"
+	"github.com/api7/kongtoapisix/pkg/utils"
 )
 
 var pluginMap = map[string]func(p Plugin) (v1.Plugins, error){
@@ -19,7 +20,7 @@ func proxyCache(p Plugin) (v1.Plugins, error) {
 	pluginConfig["cache_method"] = p.Config["request_method"]
 	pluginConfig["cache_http_status"] = p.Config["response_code"]
 	if cacheTTL, ok := p.Config["cache_ttl"].(float64); ok {
-		err := AddValueToYaml(fmt.Sprintf("%v", int(cacheTTL))+"s", "apisix", "proxy_cache", "cache_ttl")
+		err := utils.AddValueToYaml(fmt.Sprintf("%v", int(cacheTTL))+"s", "apisix", "proxy_cache", "cache_ttl")
 		if err != nil {
 			return nil, err
 		}

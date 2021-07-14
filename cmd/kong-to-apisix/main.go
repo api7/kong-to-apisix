@@ -1,45 +1,23 @@
 package main
 
 import (
-	"io/ioutil"
-	"os"
-	"path/filepath"
-
 	"github.com/api7/kongtoapisix/pkg/apisix"
 	"github.com/api7/kongtoapisix/pkg/kong"
-	"gopkg.in/yaml.v2"
 )
 
-var yamlEndFlag = []byte("#END")
-
 func main() {
-	apisixConfig := &apisix.APISIX{}
-	if err := kong.Migrate(apisixConfig); err != nil {
-		panic("migrate failed: " + err.Error())
-	}
-	apisixYaml, err := yaml.Marshal(apisixConfig)
+	kongConfig, err := kong.ReadYaml()
 	if err != nil {
 		panic(err)
 	}
-	apisixYaml = append(apisixYaml, yamlEndFlag...)
-	exportPath := "apisix.yaml"
-	if os.Getenv("EXPORT_PATH") != "" {
-		exportPath = filepath.Join(os.Getenv("EXPORT_PATH"), exportPath)
+	apisixConfig, err := kong.Migrate(kongConfig)
+	if err != nil {
+		panic("migrate failed: " + err.Error())
 	}
-	if err := ioutil.WriteFile(exportPath, apisixYaml, 0644); err != nil {
+	if err := apisix.WriteToFile(apisixConfig); err != nil {
 		panic(err)
 	}
-	if err := enableAPISIXStandalone(); err != nil {
+	if err := apisix.EnableAPISIXStandalone(); err != nil {
 		panic(err)
 	}
-}
-
-func enableAPISIXStandalone() error {
-	if err := kong.AddValueToYaml(false, "apisix", "enable_admin"); err != nil {
-		return err
-	}
-	if err := kong.AddValueToYaml("yaml", "apisix", "config_center"); err != nil {
-		return err
-	}
-	return nil
 }
