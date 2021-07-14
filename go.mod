@@ -17,6 +17,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible // indirect
 )
-
-// use personal branch for now
-replace github.com/apache/apisix-ingress-controller v0.0.0-20210614074814-7e146b66f26c => github.com/yiyiyimu/apisix-ingress-controller v0.0.0-20210630025744-8b2326b443c8
