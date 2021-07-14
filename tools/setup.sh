@@ -7,10 +7,9 @@ fetch_docker_repos() {
     if [[ ! -d ${BASEDIR}"/repos/apisix-docker" ]]; then
         git clone https://github.com/apache/apisix-docker.git ${BASEDIR}/repos/apisix-docker --depth=1
         chmod 777 ${BASEDIR}/repos/apisix-docker/example/etcd_data
+        cp ${BASEDIR}/examples/config.yaml ${BASEDIR}/repos/apisix-docker/example/apisix_conf/config.yaml
         touch ${BASEDIR}/repos/apisix-docker/example/apisix_conf/apisix.yaml
         sed -i '/apisix_conf/a \      - ./apisix_conf/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro' ${BASEDIR}/repos/apisix-docker/example/docker-compose.yml
-        sed -i -e's/apisix:2.6-alpine/apisix:2.7-alpine/g' ${BASEDIR}/repos/apisix-docker/example/docker-compose.yml
-
     fi
 
     if [[ ! -d ${BASEDIR}"/repos/kong-docker" ]]; then

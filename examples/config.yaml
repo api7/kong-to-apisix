@@ -1,0 +1,3 @@
+apisix:
+  config_center: yaml
+  enable_admin: false
