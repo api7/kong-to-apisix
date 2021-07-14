@@ -1,6 +1,6 @@
 .PHONY: test
 test:
-	ginkgo -r --progress --trace -cover -coverprofile=coverage.txt -covermode=atomic
+	ginkgo -r --progress --trace -coverpkg=./... -coverprofile=coverage.txt
 
 .PHONY: build
 build:
