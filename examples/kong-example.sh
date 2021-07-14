@@ -120,7 +120,7 @@ curl -X POST http://127.0.0.1:8001/upstreams/upstream/targets \
 httpbin_num=0
 mockbin_num=0
 set +x
-for i in {1..6}; do
+for i in {1..8}; do
     body=$(curl -k -i -s http://127.0.0.1:8000/mock -H 'apikey:apikey')
     if [[ $body == *"httpbin"* ]]; then
         httpbin_num=$((httpbin_num+1))

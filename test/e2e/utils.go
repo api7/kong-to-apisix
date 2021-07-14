@@ -2,9 +2,21 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"time"
 
-	"github.com/apache/apisix-ingress-controller/pkg/apisix"
+	"github.com/api7/kongtoapisix/pkg/apisix"
+	"github.com/api7/kongtoapisix/pkg/kong"
 	"github.com/globocom/gokong"
+	"github.com/kong/deck/dump"
+	"github.com/kong/deck/file"
+	"github.com/kong/deck/state"
+	"github.com/kong/deck/utils"
+	"github.com/onsi/ginkgo"
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -25,27 +37,26 @@ type CompareCase struct {
 	ExpectStatusCode int
 }
 
-func purgeAll(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error {
-	if err := deleteRoute(apisixCli, kongCli); err != nil {
+func purgeAll(kongCli gokong.KongAdminClient) error {
+	if err := deleteRoute(kongCli); err != nil {
 		return err
 	}
-	if err := deleteService(apisixCli, kongCli); err != nil {
+	if err := deleteService(kongCli); err != nil {
 		return err
 	}
-	if err := deleteUpstream(apisixCli, kongCli); err != nil {
+	if err := deleteUpstream(kongCli); err != nil {
 		return err
 	}
-	if err := deleteConsumer(apisixCli, kongCli); err != nil {
+	if err := deleteConsumer(kongCli); err != nil {
 		return err
 	}
-	if err := deletePlugin(apisixCli, kongCli); err != nil {
+	if err := deletePlugin(kongCli); err != nil {
 		return err
 	}
 	return nil
 }
 
-func deleteRoute(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error {
-	ctx := context.Background()
+func deleteRoute(kongCli gokong.KongAdminClient) error {
 	kongRoutes, err := kongCli.Routes().List(&gokong.RouteQueryString{})
 	if err != nil {
 		return err
@@ -56,19 +67,10 @@ func deleteRoute(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error
 		}
 	}
 
-	apisixRoutes, err := apisixCli.Route().List(ctx)
-	if err != nil {
-		return err
-	}
-	for _, r := range apisixRoutes {
-		if err := apisixCli.Route().Delete(ctx, r); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
-func deleteService(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error {
+func deleteService(kongCli gokong.KongAdminClient) error {
 	kongServices, err := kongCli.Services().GetServices(&gokong.ServiceQueryString{})
 	if err != nil {
 		return err
@@ -81,8 +83,7 @@ func deleteService(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) err
 	return nil
 }
 
-func deleteUpstream(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error {
-	ctx := context.Background()
+func deleteUpstream(kongCli gokong.KongAdminClient) error {
 	kongUpstreams, err := kongCli.Upstreams().List()
 	if err != nil {
 		return err
@@ -94,20 +95,10 @@ func deleteUpstream(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) er
 		}
 	}
 
-	apisixUpstreams, err := apisixCli.Upstream().List(ctx)
-	if err != nil {
-		return err
-	}
-	for _, u := range apisixUpstreams {
-		if err := apisixCli.Upstream().Delete(ctx, u); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
-func deleteConsumer(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error {
-	ctx := context.Background()
+func deleteConsumer(kongCli gokong.KongAdminClient) error {
 	kongConsumers, err := kongCli.Consumers().List(&gokong.ConsumerQueryString{})
 	if err != nil {
 		return err
@@ -118,20 +109,10 @@ func deleteConsumer(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) er
 			return err
 		}
 	}
-
-	apisixConsumers, err := apisixCli.Consumer().List(ctx)
-	if err != nil {
-		return err
-	}
-	for _, c := range apisixConsumers {
-		if err := apisixCli.Consumer().Delete(ctx, c); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
-func deletePlugin(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error {
+func deletePlugin(kongCli gokong.KongAdminClient) error {
 	kongPlugins, err := kongCli.Plugins().List(&gokong.PluginQueryString{})
 	if err != nil {
 		return err
@@ -164,4 +145,81 @@ func defaultRoute() *gokong.RouteRequest {
 		StripPath:     gokong.Bool(true),
 		PreserveHost:  gokong.Bool(true),
 	}
+}
+
+func dumpKong() ([]byte, error) {
+	rootConfig := utils.KongClientConfig{
+		Address: "http://localhost:8001",
+	}
+	wsClient, err := utils.GetKongClient(rootConfig)
+	if err != nil {
+		return nil, err
+	}
+	dumpConfig := dump.Config{}
+
+	rawState, err := dump.Get(context.Background(), wsClient, dumpConfig)
+	if err != nil {
+		return nil, fmt.Errorf("reading configuration from Kong: %w", err)
+	}
+	ks, err := state.Get(rawState)
+	if err != nil {
+		return nil, fmt.Errorf("building state: %w", err)
+	}
+
+	tmpStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err = file.KongStateToFile(ks, file.WriteConfig{
+		SelectTags: dumpConfig.SelectorTags,
+		Workspace:  "",
+		Filename:   "-",
+		FileFormat: "YAML",
+		WithID:     false,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	w.Close()
+	out, _ := ioutil.ReadAll(r)
+	os.Stdout = tmpStdout
+
+	return out, nil
+}
+
+func testMigrate() error {
+	kongConfigBytes, err := dumpKong()
+	if err != nil {
+		return err
+	}
+	var kongConfig *kong.KongConfig
+	err = yaml.Unmarshal(kongConfigBytes, &kongConfig)
+	if err != nil {
+		return err
+	}
+
+	prettier, err := json.MarshalIndent(kongConfig, "", "\t")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(ginkgo.GinkgoWriter, "kong yaml: %s\n", string(prettier))
+
+	apisixConfig, err := kong.Migrate(kongConfig)
+	if err != nil {
+		return err
+	}
+
+	prettier, err = json.MarshalIndent(apisixConfig, "", "\t")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(ginkgo.GinkgoWriter, "apisix yaml: %s\n", string(prettier))
+
+	if err := apisix.WriteToFile(apisixConfig); err != nil {
+		return err
+	}
+	// wait one second to make new config works
+	time.Sleep(1500 * time.Millisecond)
+	return nil
 }

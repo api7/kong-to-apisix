@@ -44,7 +44,8 @@ Only tested with APISIX 2.7 and Kong 2.4 for now.
 
 3. Run migration tool
     ```shell
-    go run ./cmd/kong-to-apisix/main.go
+    EXPORT_PATH=./repos/apisix-docker/example/apisix_conf go run ./cmd/kong-to-apisix/main.go
+
     ```
 
 4. Verify migration succeeds

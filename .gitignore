@@ -13,3 +13,5 @@ coverage.txt
 
 bin
 repos
+apisix.yaml
+kong.yaml

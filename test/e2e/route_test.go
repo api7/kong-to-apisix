@@ -6,33 +6,19 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/apache/apisix-ingress-controller/pkg/apisix"
 	"github.com/globocom/gokong"
 	"github.com/icza/dyno"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-
-	"github.com/yiyiyimu/kongtoapisix/pkg/apisixcli"
-	"github.com/yiyiyimu/kongtoapisix/pkg/route"
-	"github.com/yiyiyimu/kongtoapisix/pkg/upstream"
 )
 
 var _ = Describe("route", func() {
-	var (
-		apisixCli apisix.Cluster
-		kongCli   gokong.KongAdminClient
-	)
-
-	BeforeEach(func() {
-		var err error
-		apisixCli, err = apisixcli.CreateAPISIXCli()
-		Expect(err).To(BeNil())
-		kongCli = gokong.NewClient(gokong.NewDefaultConfig())
-	})
+	var kongCli gokong.KongAdminClient
 
 	JustBeforeEach(func() {
-		err := purgeAll(apisixCli, kongCli)
+		kongCli = gokong.NewClient(gokong.NewDefaultConfig())
+		err := purgeAll(kongCli)
 		Expect(err).To(BeNil())
 	})
 
@@ -48,10 +34,7 @@ var _ = Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		Expect(err).To(BeNil())
 
-		err = upstream.MigrateUpstream(apisixCli, kongCli)
-		Expect(err).To(BeNil())
-
-		err = route.MigrateRoute(apisixCli, kongCli)
+		err = testMigrate()
 		Expect(err).To(BeNil())
 
 		same, err := compareResp(&CompareCase{
@@ -74,10 +57,7 @@ var _ = Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		Expect(err).To(BeNil())
 
-		err = upstream.MigrateUpstream(apisixCli, kongCli)
-		Expect(err).To(BeNil())
-
-		err = route.MigrateRoute(apisixCli, kongCli)
+		err = testMigrate()
 		Expect(err).To(BeNil())
 
 		same, err := compareResp(&CompareCase{
@@ -100,10 +80,7 @@ var _ = Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		Expect(err).To(BeNil())
 
-		err = upstream.MigrateUpstream(apisixCli, kongCli)
-		Expect(err).To(BeNil())
-
-		err = route.MigrateRoute(apisixCli, kongCli)
+		err = testMigrate()
 		Expect(err).To(BeNil())
 
 		same, err := compareResp(&CompareCase{
@@ -175,7 +152,7 @@ func getBody(c *CompareCase) (string, error) {
 	v := make(map[string]interface{})
 	err = json.Unmarshal(body, &v)
 	if err != nil {
-		return "", errors.Wrap(err, "unmarshal error")
+		return "", errors.Wrapf(err, "unmarshal error: %s", string(body))
 	}
 
 	value, err := dyno.Get(v, "url")
