@@ -9,6 +9,7 @@ fetch_docker_repos() {
         chmod 777 ${BASEDIR}/repos/apisix-docker/example/etcd_data
         touch ${BASEDIR}/repos/apisix-docker/example/apisix_conf/apisix.yaml
         sed -i '/apisix_conf/a \      - ./apisix_conf/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro' ${BASEDIR}/repos/apisix-docker/example/docker-compose.yml
+        sed -i -e's/apisix:2.6-alpine/apisix:2.7-alpine/g' ${BASEDIR}/repos/apisix-docker/example/docker-compose.yml
 
     fi
 
