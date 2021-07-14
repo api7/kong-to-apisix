@@ -64,6 +64,22 @@ func MigrateRoute(kongConfig *KongConfig) (*[]v1.Route, error) {
 			}
 			apisixRoute.Methods = methods
 
+			plugins := v1.Plugins{}
+			for _, p := range r.Plugins {
+				if f, ok := pluginMap[p.Name]; ok {
+					if p.Enabled {
+						if apisixPlugin, err := f(p); err != nil {
+							return nil, err
+						} else {
+							for k, v := range apisixPlugin {
+								plugins[k] = v
+							}
+						}
+					}
+				}
+			}
+			apisixRoute.Plugins = plugins
+
 			apisixRoutes = append(apisixRoutes, *apisixRoute)
 		}
 	}

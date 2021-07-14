@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/apache/apisix-ingress-controller/pkg/apisix"
 	"github.com/globocom/gokong"
 	"github.com/icza/dyno"
 	. "github.com/onsi/ginkgo"
@@ -17,13 +16,10 @@ import (
 )
 
 var _ = Describe("route", func() {
-	var (
-		apisixCli apisix.Cluster
-		kongCli   gokong.KongAdminClient
-	)
+	var kongCli gokong.KongAdminClient
 
 	JustBeforeEach(func() {
-		err := purgeAll(apisixCli, kongCli)
+		err := purgeAll(kongCli)
 		Expect(err).To(BeNil())
 	})
 

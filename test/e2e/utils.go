@@ -1,9 +1,6 @@
 package e2e
 
 import (
-	"context"
-
-	"github.com/apache/apisix-ingress-controller/pkg/apisix"
 	"github.com/globocom/gokong"
 )
 
@@ -25,27 +22,26 @@ type CompareCase struct {
 	ExpectStatusCode int
 }
 
-func purgeAll(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error {
-	if err := deleteRoute(apisixCli, kongCli); err != nil {
+func purgeAll(kongCli gokong.KongAdminClient) error {
+	if err := deleteRoute(kongCli); err != nil {
 		return err
 	}
-	if err := deleteService(apisixCli, kongCli); err != nil {
+	if err := deleteService(kongCli); err != nil {
 		return err
 	}
-	if err := deleteUpstream(apisixCli, kongCli); err != nil {
+	if err := deleteUpstream(kongCli); err != nil {
 		return err
 	}
-	if err := deleteConsumer(apisixCli, kongCli); err != nil {
+	if err := deleteConsumer(kongCli); err != nil {
 		return err
 	}
-	if err := deletePlugin(apisixCli, kongCli); err != nil {
+	if err := deletePlugin(kongCli); err != nil {
 		return err
 	}
 	return nil
 }
 
-func deleteRoute(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error {
-	ctx := context.Background()
+func deleteRoute(kongCli gokong.KongAdminClient) error {
 	kongRoutes, err := kongCli.Routes().List(&gokong.RouteQueryString{})
 	if err != nil {
 		return err
@@ -56,19 +52,10 @@ func deleteRoute(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error
 		}
 	}
 
-	apisixRoutes, err := apisixCli.Route().List(ctx)
-	if err != nil {
-		return err
-	}
-	for _, r := range apisixRoutes {
-		if err := apisixCli.Route().Delete(ctx, r); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
-func deleteService(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error {
+func deleteService(kongCli gokong.KongAdminClient) error {
 	kongServices, err := kongCli.Services().GetServices(&gokong.ServiceQueryString{})
 	if err != nil {
 		return err
@@ -81,8 +68,7 @@ func deleteService(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) err
 	return nil
 }
 
-func deleteUpstream(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error {
-	ctx := context.Background()
+func deleteUpstream(kongCli gokong.KongAdminClient) error {
 	kongUpstreams, err := kongCli.Upstreams().List()
 	if err != nil {
 		return err
@@ -94,20 +80,10 @@ func deleteUpstream(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) er
 		}
 	}
 
-	apisixUpstreams, err := apisixCli.Upstream().List(ctx)
-	if err != nil {
-		return err
-	}
-	for _, u := range apisixUpstreams {
-		if err := apisixCli.Upstream().Delete(ctx, u); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
-func deleteConsumer(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error {
-	ctx := context.Background()
+func deleteConsumer(kongCli gokong.KongAdminClient) error {
 	kongConsumers, err := kongCli.Consumers().List(&gokong.ConsumerQueryString{})
 	if err != nil {
 		return err
@@ -118,20 +94,10 @@ func deleteConsumer(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) er
 			return err
 		}
 	}
-
-	apisixConsumers, err := apisixCli.Consumer().List(ctx)
-	if err != nil {
-		return err
-	}
-	for _, c := range apisixConsumers {
-		if err := apisixCli.Consumer().Delete(ctx, c); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
-func deletePlugin(apisixCli apisix.Cluster, kongCli gokong.KongAdminClient) error {
+func deletePlugin(kongCli gokong.KongAdminClient) error {
 	kongPlugins, err := kongCli.Plugins().List(&gokong.PluginQueryString{})
 	if err != nil {
 		return err
