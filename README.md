@@ -22,7 +22,7 @@ Only tested with APISIX 2.7 and Kong 2.4 for now.
 
    ```shell
    make build
-   EXPORT KONG_YAML_PATH="/PATH/TO/YOUR/Kong.yaml"
+   export KONG_YAML_PATH="/PATH/TO/YOUR/Kong.yaml"
    ./bin/kong2apisix
    ```
 
@@ -33,7 +33,7 @@ Only tested with APISIX 2.7 and Kong 2.4 for now.
         enable_admin: false
     ```
 
-    If you deploy APISIX with docker compose, you need to add `apisix.yaml` to volumes. You could change docker-compose.yml with
+    If you deploy APISIX with docker compose, you need to add `apisix.yaml` to volumes. You could change docker-compose.yml and re-do `docker-compose up`
     ```yaml
     volumes:
       - ./apisix_log:/usr/local/apisix/logs
@@ -41,7 +41,7 @@ Only tested with APISIX 2.7 and Kong 2.4 for now.
       - ./apisix_conf/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro
     ```
 
-5. Reload APISIX and now test with your new API Gateway
+5. Reload APISIX to make declarative configuration work and now test with your new API Gateway
    ```shell
    /PATH/TO/APISIX/bin/apisix reload
    ```
@@ -50,6 +50,7 @@ Only tested with APISIX 2.7 and Kong 2.4 for now.
 
 1. Make sure you have docker running, and then setup apisix and kong
     ```shell
+    cd kong-to-apisix
     ./tools/setup.sh
     ```
 
@@ -69,9 +70,8 @@ Only tested with APISIX 2.7 and Kong 2.4 for now.
 
 4. Run migration tool, import `kong.yaml` and generate `apisix.yaml` for apisix to use
     ```shell
-    EXPORT_PATH=./repos/apisix-docker/example/apisix_conf
+    export EXPORT_PATH=./repos/apisix-docker/example/apisix_conf
     go run ./cmd/kong-to-apisix/main.go
-
     ```
 
 5. Verify migration succeeds

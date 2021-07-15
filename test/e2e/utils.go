@@ -142,7 +142,7 @@ func defaultRoute() *gokong.RouteRequest {
 	}
 }
 
-func getKongConfig() {
+func getKongConfig() ([]byte, error) {
 	tmpStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
@@ -159,7 +159,7 @@ func getKongConfig() {
 }
 
 func testMigrate() error {
-	kongConfigBytes, err := kong.DumpKong("")
+	kongConfigBytes, err := getKongConfig()
 	if err != nil {
 		return err
 	}

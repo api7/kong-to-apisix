@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/api7/kongtoapisix/pkg/kong"
@@ -14,4 +15,5 @@ func main() {
 	if err := kong.DumpKong(filePath); err != nil {
 		panic(err)
 	}
+	fmt.Println("generate kong configuration file at", filePath)
 }
