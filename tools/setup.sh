@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-BASEDIR=$(dirname $(dirname $(dirname "$0")))
+BASEDIR=$(dirname "$0")/..
 
 fetch_docker_repos() {
     mkdir -p ${BASEDIR}/repos
@@ -8,8 +8,13 @@ fetch_docker_repos() {
         git clone https://github.com/apache/apisix-docker.git ${BASEDIR}/repos/apisix-docker --depth=1
         chmod 777 ${BASEDIR}/repos/apisix-docker/example/etcd_data
         cp ${BASEDIR}/examples/config.yaml ${BASEDIR}/repos/apisix-docker/example/apisix_conf/config.yaml
-        touch ${BASEDIR}/repos/apisix-docker/example/apisix_conf/apisix.yaml
-        sed -i '/apisix_conf/a \      - ./apisix_conf/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro' ${BASEDIR}/repos/apisix-docker/example/docker-compose.yml
+        cp ${BASEDIR}/examples/apisix.yaml ${BASEDIR}/repos/apisix-docker/example/apisix_conf/apisix.yaml
+        if [ $(uname) = "Darwin" ]; then
+            which gsed || brew install gnu-sed
+            gsed -i '/apisix_conf/a \      - ./apisix_conf/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro' ${BASEDIR}/repos/apisix-docker/example/docker-compose.yml
+        else
+            sed -i '/apisix_conf/a \      - ./apisix_conf/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro' ${BASEDIR}/repos/apisix-docker/example/docker-compose.yml
+        fi
     fi
 
     if [[ ! -d ${BASEDIR}"/repos/kong-docker" ]]; then
@@ -84,6 +89,7 @@ setup_with_docker_compose() {
                 exit 1
             fi
         done
+        echo "upstream work as expected"
     fi
 }
 
