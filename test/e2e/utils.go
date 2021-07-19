@@ -13,7 +13,6 @@ import (
 	"github.com/api7/kongtoapisix/pkg/kong"
 	"github.com/globocom/gokong"
 	"github.com/kong/deck/dump"
-	"github.com/kong/deck/file"
 	"github.com/kong/deck/state"
 	"github.com/kong/deck/utils"
 	"github.com/onsi/ginkgo"
@@ -206,14 +205,7 @@ func dumpKong() ([]byte, error) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	err = file.KongStateToFile(ks, file.WriteConfig{
-		SelectTags: dumpConfig.SelectorTags,
-		Workspace:  "",
-		Filename:   "-",
-		FileFormat: "YAML",
-		WithID:     false,
-	})
-	if err != nil {
+	if err := kong.DumpKong(""); err != nil {
 		return nil, err
 	}
 
@@ -225,7 +217,7 @@ func dumpKong() ([]byte, error) {
 }
 
 func testMigrate() error {
-	kongConfigBytes, err := dumpKong()
+	kongConfigBytes, err := getKongConfig()
 	if err != nil {
 		return err
 	}
