@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"time"
 
@@ -11,13 +12,15 @@ import (
 	"github.com/api7/kongtoapisix/pkg/kong"
 	"github.com/globocom/gokong"
 	"github.com/onsi/ginkgo"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
 
 var (
-	upstreamAddr = "http://172.17.0.1:8088"
-	apisixAddr   = "http://127.0.0.1:9080"
-	kongAddr     = "http://127.0.0.1:8000"
+	upstreamAddr  = "http://172.17.0.1:7024"
+	upstreamAddr2 = "http://172.17.0.1:7025"
+	apisixAddr    = "http://127.0.0.1:9080"
+	kongAddr      = "http://127.0.0.1:8000"
 )
 
 type TestCase struct {
@@ -142,6 +145,39 @@ func defaultRoute() *gokong.RouteRequest {
 	}
 }
 
+func defaultUpstream() *gokong.UpstreamRequest {
+	return &gokong.UpstreamRequest{
+		HashOn:           "none",
+		HashFallback:     "none",
+		HashOnCookiePath: "/",
+		Slots:            10000,
+		HealthChecks: &gokong.UpstreamHealthCheck{
+			Active: &gokong.UpstreamHealthCheckActive{
+				Type:        "http",
+				Concurrency: 10,
+				Unhealthy: &gokong.ActiveUnhealthy{
+					Interval:     0,
+					TcpFailures:  0,
+					HttpStatuses: []int{429, 404, 500, 501, 502, 503, 504, 505},
+					HttpFailures: 0,
+					Timeouts:     0,
+				},
+				Healthy: &gokong.ActiveHealthy{
+					HttpStatuses: []int{200, 302},
+					Interval:     0,
+					Successes:    0,
+				},
+			},
+		},
+	}
+}
+
+func defaultTarget() *gokong.TargetRequest {
+	return &gokong.TargetRequest{
+		Weight: 100,
+	}
+}
+
 func getKongConfig() ([]byte, error) {
 	tmpStdout := os.Stdout
 	r, w, _ := os.Pipe()
@@ -192,4 +228,56 @@ func testMigrate() error {
 	// wait one second to make new config works
 	time.Sleep(1500 * time.Millisecond)
 	return nil
+}
+
+func getResp(c *CompareCase) (string, string, error) {
+	c.Url = apisixAddr + c.Path
+	apisixResp, err := getBody(c)
+	if err != nil {
+		return "", "", errors.Wrap(err, "apisix")
+	}
+
+	c.Url = kongAddr + c.Path
+	kongResp, err := getBody(c)
+	if err != nil {
+		return "", "", errors.Wrap(err, "kong")
+	}
+
+	ginkgo.GinkgoT().Logf("Kong: %s, APISIX: %s", kongResp, apisixResp)
+	return apisixResp, kongResp, nil
+}
+
+func getBody(c *CompareCase) (string, error) {
+	req, err := http.NewRequest("GET", c.Url, nil)
+	if err != nil {
+		return "", errors.Wrap(err, "http new request error")
+	}
+	for k, v := range c.Headers {
+		if k == "Host" {
+			req.Host = c.Headers["Host"]
+		} else {
+			req.Header.Set(k, v)
+		}
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", errors.Wrap(err, "http get error")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == c.ExpectStatusCode {
+		return "", nil
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "read body error")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Sprintf("%d ", resp.StatusCode), errors.Errorf("read body error: %s", string(body))
+	}
+
+	return string(body), nil
 }

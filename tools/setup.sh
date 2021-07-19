@@ -22,75 +22,57 @@ fetch_docker_repos() {
     fi
 }
 
-setup_with_docker_compose() {
-    fetch_docker_repos
+fetch_docker_repos
 
-    docker ps > /dev/null
-    if [ $? -ne 0 ]; then
-        echo "docker not working"
-        exit 1
-    fi
+docker ps > /dev/null
+if [ $? -ne 0 ]; then
+    echo "docker not working"
+    exit 1
+fi
 
-    retries=10
-    if [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080) -eq 404 ]; then
-        echo "apisix work as expected"
-    else
-        docker-compose -f ${BASEDIR}/repos/apisix-docker/example/docker-compose.yml up -d
-        count=0
-        while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080) -ne 404 ];
-        do
-            echo "Waiting for apisix setup" && sleep 2;
+retries=10
+if [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080) -eq 404 ]; then
+    echo "apisix work as expected"
+else
+    docker-compose -f ${BASEDIR}/repos/apisix-docker/example/docker-compose.yml up -d
+    count=0
+    while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080) -ne 404 ];
+    do
+        echo "Waiting for apisix setup" && sleep 2;
 
-            ((count=count+1))
-            if [ $count -gt ${retries} ]; then
-                echo $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080)
-                echo "apisix not work as expected"
-                docker ps -a
-                exit 1
-            fi
-        done
-        echo "apisix work as expected"
-    fi
+        ((count=count+1))
+        if [ $count -gt ${retries} ]; then
+            echo $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:9080)
+            echo "apisix not work as expected"
+            docker ps -a
+            exit 1
+        fi
+    done
+    echo "apisix work as expected"
+fi
 
-    if [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001) -eq 200 ]; then
-        echo "kong work as expected"
-    else
-        docker-compose -f ${BASEDIR}/repos/kong-docker/compose/docker-compose.yml up -d
-        count=0
-        while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001) -ne 200 ];
-        do
-            echo "Waiting for kong setup" && sleep 2;
+if [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001) -eq 200 ]; then
+    echo "kong work as expected"
+else
+    docker-compose -f ${BASEDIR}/repos/kong-docker/compose/docker-compose.yml up -d
+    count=0
+    while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001) -ne 200 ];
+    do
+        echo "Waiting for kong setup" && sleep 2;
 
-            ((count=count+1))
-            if [ $count -gt ${retries} ]; then
-                echo $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001)
-                printf "kong not work as expected\n"
-                docker ps -a
-                exit 1
-            fi
-        done
-        echo "kong work as expected"
-    fi
+        ((count=count+1))
+        if [ $count -gt ${retries} ]; then
+            echo $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8001)
+            printf "kong not work as expected\n"
+            docker ps -a
+            exit 1
+        fi
+    done
+    echo "kong work as expected"
+fi
 
-    if [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8088/get) -eq 200 ]; then
-        echo "upstream work as expected"
-    else
-        docker run --name httpbin -d -p 8088:80 kennethreitz/httpbin
-        count=0
-        while [ $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8088/get) -ne 200 ];
-        do
-            echo "Waiting for httpbin setup" && sleep 2;
-
-            ((count=count+1))
-            if [ $count -gt ${retries} ]; then
-                echo $(curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://localhost:8088/get)
-                printf "upstream not work as expected\n"
-                docker ps -a
-                exit 1
-            fi
-        done
-        echo "upstream work as expected"
-    fi
-}
-
-setup_with_docker_compose
+if [ ! -z "$1" ]; then
+    echo "set upstream"
+    docker container inspect upstream > /dev/null 2>&1 \
+    || docker run -itd --name upstream -v $(pwd)/examples/conf:/etc/nginx/conf.d -p 7024:7024 -p 7025:7025 openresty/openresty:alpine
+fi
