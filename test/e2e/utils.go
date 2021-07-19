@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -12,9 +11,6 @@ import (
 	"github.com/api7/kongtoapisix/pkg/apisix"
 	"github.com/api7/kongtoapisix/pkg/kong"
 	"github.com/globocom/gokong"
-	"github.com/kong/deck/dump"
-	"github.com/kong/deck/state"
-	"github.com/kong/deck/utils"
 	"github.com/onsi/ginkgo"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -182,25 +178,7 @@ func defaultTarget() *gokong.TargetRequest {
 	}
 }
 
-func dumpKong() ([]byte, error) {
-	rootConfig := utils.KongClientConfig{
-		Address: "http://localhost:8001",
-	}
-	wsClient, err := utils.GetKongClient(rootConfig)
-	if err != nil {
-		return nil, err
-	}
-	dumpConfig := dump.Config{}
-
-	rawState, err := dump.Get(context.Background(), wsClient, dumpConfig)
-	if err != nil {
-		return nil, fmt.Errorf("reading configuration from Kong: %w", err)
-	}
-	ks, err := state.Get(rawState)
-	if err != nil {
-		return nil, fmt.Errorf("building state: %w", err)
-	}
-
+func getKongConfig() ([]byte, error) {
 	tmpStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
