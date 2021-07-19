@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 
 	v1 "github.com/apache/apisix-ingress-controller/pkg/types/apisix/v1"
+	"github.com/pkg/errors"
 )
 
 func MigrateUpstream(kongConfig *KongConfig) (*[]v1.Upstream, error) {
@@ -47,7 +49,7 @@ func MigrateUpstream(kongConfig *KongConfig) (*[]v1.Upstream, error) {
 			case "none":
 				apisixUpstream.HashOn = "vars"
 			case "ip":
-				fmt.Println("upstream hashon parameter `hashon` not supported in apisix")
+				fmt.Println("upstream hashon parameter `ip` not supported in apisix")
 				apisixUpstream.HashOn = "vars"
 			default:
 				apisixUpstream.HashOn = upstream.HashOn
@@ -57,11 +59,11 @@ func MigrateUpstream(kongConfig *KongConfig) (*[]v1.Upstream, error) {
 
 			for _, t := range targets {
 				u, err := url.Parse(t.Target)
-				if err != nil {
-					return nil, err
+				if err != nil && !strings.Contains(err.Error(), "first path segment in URL cannot contain colon") {
+					return nil, errors.Wrap(err, "url parse")
 				}
 
-				if u.Host == "" {
+				if u == nil || u.Host == "" {
 					u, err = url.ParseRequestURI("http://" + t.Target)
 					if err != nil {
 						return nil, err
