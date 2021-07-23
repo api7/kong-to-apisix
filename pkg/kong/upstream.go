@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	v1 "github.com/apache/apisix-ingress-controller/pkg/types/apisix/v1"
-	"github.com/api7/kongtoapisix/pkg/utils"
+	"github.com/api7/kong-to-apisix/pkg/utils"
 	"github.com/pkg/errors"
 )
 

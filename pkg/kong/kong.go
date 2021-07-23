@@ -5,8 +5,8 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/api7/kongtoapisix/pkg/apisix"
-	"github.com/api7/kongtoapisix/pkg/utils"
+	"github.com/api7/kong-to-apisix/pkg/apisix"
+	"github.com/api7/kong-to-apisix/pkg/utils"
 )
 
 func Migrate(kongConfig *KongConfig) (*apisix.Config, *[]utils.YamlItem, error) {
