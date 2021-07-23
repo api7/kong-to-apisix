@@ -10,48 +10,24 @@ Kong-To-APISIX is a migration tool helping you migrate configuration data of you
 Only tested with APISIX 2.7 and Kong 2.4 for now.
 
 ## How to use
-1. Setup APISIX and Kong, if you don't have them
+1. Dump Kong Configuration with Deck. See https://docs.konghq.com/deck/1.7.x/guides/backup-restore/ for details.
 
-   Recommend to use `docker compose` to deploy APISIX or Kong:
-   - APISIX docker compose guide: https://github.com/apache/apisix-docker#quickstart-via-docker-compose
-   - Kong docker compose guide: https://github.com/Kong/docker-kong/tree/master/compose
-
-2. Dump Kong Configuration with Deck. See https://docs.konghq.com/deck/1.7.x/guides/backup-restore/ for details.
-
-3. Run Kong-To-APISIX, and it would generate `apisix.yaml` as declarative configuration file for APISIX.
+2. Run Kong-To-APISIX, and it would generate `apisix.yaml` as declarative configuration file for APISIX.
 
    ```shell
-   make build
-   export KONG_YAML_PATH="/PATH/TO/YOUR/Kong.yaml"
-   ./bin/kong2apisix
+   $ make build
+   $ ./bin/kong-to-apisix migrate -o apisix.yaml
+   migrate succeed
    ```
 
-4. Configure APISIX using `apisix.yaml` by move it to `/PATH/TO/APISIX/conf/apisix.yaml`. Add the following to `config.yaml` at `/PATH/TO/APISIX/conf/config.yaml`:
-    ```yaml
-    apisix:
-        config_center: yaml
-        enable_admin: false
-    ```
-
-    If you deploy APISIX with docker compose, you need to add `apisix.yaml` to volumes. You could change docker-compose.yml and re-do `docker-compose up`
-    ```yaml
-    volumes:
-      - ./apisix_log:/usr/local/apisix/logs
-      - ./apisix_conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
-      - ./apisix_conf/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro
-    ```
-
-5. Reload APISIX to make declarative configuration work and now test with your new API Gateway
-   ```shell
-   /PATH/TO/APISIX/bin/apisix reload
-   ```
+3. Configure APISIX with `apisix.yaml`, see https://apisix.apache.org/docs/apisix/stand-alone for details.
 
 ## Demo
 
 1. Make sure you have docker running, and then setup apisix and kong
     ```shell
-    cd kong-to-apisix
-    ./tools/setup.sh
+    $ cd kong-to-apisix
+    $ ./tools/setup.sh
     ```
 
 2. Follow https://docs.konghq.com/getting-started-guide/2.4.x/overview/ to
@@ -60,23 +36,65 @@ Only tested with APISIX 2.7 and Kong 2.4 for now.
    3. Secure services with key authentication
    4. Set up load balancing
     ```shell
-    ./examples/kong-example.sh
+    $./examples/kong-example.sh
     ```
 
 3. Dump kong configuration to `kong.yaml`
    ```shell
-   go run ./cmd/dumpkong/main.go
+   $ make build
+   $ ./bin/kong-to-apisix dump -o kong.yaml
+   generated kong configuration file at kong.yaml
    ```
 
 4. Run migration tool, import `kong.yaml` and generate `apisix.yaml` for apisix to use
     ```shell
-    export EXPORT_PATH=./repos/apisix-docker/example/apisix_conf
-    go run ./cmd/kong-to-apisix/main.go
+    $ ./bin/kong-to-apisix migrate -i kong.yaml -o ./repos/apisix-docker/example/apisix_conf/apisix.yaml -c ./repos/apisix-docker/example/apisix_conf/config.yaml
+    migrate succeed
     ```
 
 5. Verify migration succeeds
+    1. test key auth migration
     ```shell
-    ./examples/apisix-verification.sh
+    curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://127.0.0.1:9080/mock
+    # output: 401
+    ```
+    2. test proxy cache
+    ```shell
+    # access for the first time
+    curl -k -I -s  -o /dev/null http://127.0.0.1:9080/mock -H "apikey: apikey" -H "Host: mockbin.org"
+    # see if got cached
+    curl -I -s -X GET http://127.0.0.1:9080/mock -H "apikey: apikey" -H "Host: mockbin.org"
+    # output:
+    #   HTTP/1.1 200 OK
+    #   ...
+    #   Apisix-Cache-Status: HIT
+    ```
+
+    3. test limit count
+    ```shell
+    for i in {1..5}; do
+        curl -s -o /dev/null -X GET http://127.0.0.1:9080/mock -H "apikey: apikey" -H "Host: mockbin.org"
+    done
+    curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://127.0.0.1:9080/mock -H "apikey: apikey" -H "Host: mockbin.org"
+    # output: 429
+    ```
+
+    4. test load balancing
+    ```shell
+    httpbin_num=0
+    mockbin_num=0
+    for i in {1..8}; do
+        body=$(curl -k -i -s http://127.0.0.1:9080/mock -H "apikey: apikey" -H "Host: mockbin.org")
+        if [[ $body == *"httpbin"* ]]; then
+            httpbin_num=$((httpbin_num+1))
+        elif [[ $body == *"mockbin"* ]]; then
+            mockbin_num=$((mockbin_num+1))
+        fi
+        sleep 1.5
+    done
+    echo "httpbin number: "${httpbin_num}", mockbin number: "${mockbin_num}
+    # output:
+    #   httpbin number: 6, mockbin number: 2
     ```
 
 ## Roadmap

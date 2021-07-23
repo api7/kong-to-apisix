@@ -3,7 +3,6 @@ package kong
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/kong/deck/dump"
 	"github.com/kong/deck/file"
@@ -11,11 +10,7 @@ import (
 	"github.com/kong/deck/utils"
 )
 
-func DumpKong(fileName string) error {
-	kongAddr := "http://localhost:8001"
-	if os.Getenv("KONG_ADMIN_ADDR") != "" {
-		kongAddr = os.Getenv("KONG_ADMIN_ADDR")
-	}
+func DumpKong(kongAddr string, fileName string) error {
 	rootConfig := utils.KongClientConfig{
 		Address: kongAddr,
 	}
