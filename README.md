@@ -16,7 +16,7 @@ Only tested with APISIX 2.7 and Kong 2.4 for now.
 
    ```shell
    $ make build
-   $ ./bin/kong-to-apisix migrate -o apisix.yaml
+   $ ./bin/kong-to-apisix migrate -i kong.yaml -o apisix.yaml
    migrate succeed
    ```
 
@@ -53,7 +53,7 @@ Only tested with APISIX 2.7 and Kong 2.4 for now.
     ```
 
 5. Verify migration succeeds
-    1. test key auth migration
+    1. test key auth
     ```shell
     curl -k -i -m 20 -o /dev/null -s -w %{http_code} http://127.0.0.1:9080/mock
     # output: 401
