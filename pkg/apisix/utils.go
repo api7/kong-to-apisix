@@ -3,7 +3,7 @@ package apisix
 import (
 	"io/ioutil"
 
-	"github.com/api7/kongtoapisix/pkg/utils"
+	"github.com/api7/kong-to-apisix/pkg/utils"
 	"gopkg.in/yaml.v2"
 )
 

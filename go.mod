@@ -1,4 +1,4 @@
-module github.com/api7/kongtoapisix
+module github.com/api7/kong-to-apisix
 
 go 1.14
 
