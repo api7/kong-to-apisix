@@ -3,25 +3,25 @@ package utils
 import "github.com/globocom/gokong"
 
 func PurgeAll(kongCli gokong.KongAdminClient) error {
-	if err := DeleteRoute(kongCli); err != nil {
+	if err := deleteRoute(kongCli); err != nil {
 		return err
 	}
-	if err := DeleteService(kongCli); err != nil {
+	if err := deleteService(kongCli); err != nil {
 		return err
 	}
-	if err := DeleteUpstream(kongCli); err != nil {
+	if err := deleteUpstream(kongCli); err != nil {
 		return err
 	}
-	if err := DeleteConsumer(kongCli); err != nil {
+	if err := deleteConsumer(kongCli); err != nil {
 		return err
 	}
-	if err := DeletePlugin(kongCli); err != nil {
+	if err := deletePlugin(kongCli); err != nil {
 		return err
 	}
 	return nil
 }
 
-func DeleteRoute(kongCli gokong.KongAdminClient) error {
+func deleteRoute(kongCli gokong.KongAdminClient) error {
 	kongRoutes, err := kongCli.Routes().List(&gokong.RouteQueryString{})
 	if err != nil {
 		return err
@@ -35,7 +35,7 @@ func DeleteRoute(kongCli gokong.KongAdminClient) error {
 	return nil
 }
 
-func DeleteService(kongCli gokong.KongAdminClient) error {
+func deleteService(kongCli gokong.KongAdminClient) error {
 	kongServices, err := kongCli.Services().GetServices(&gokong.ServiceQueryString{})
 	if err != nil {
 		return err
@@ -48,7 +48,7 @@ func DeleteService(kongCli gokong.KongAdminClient) error {
 	return nil
 }
 
-func DeleteUpstream(kongCli gokong.KongAdminClient) error {
+func deleteUpstream(kongCli gokong.KongAdminClient) error {
 	kongUpstreams, err := kongCli.Upstreams().List()
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func DeleteUpstream(kongCli gokong.KongAdminClient) error {
 	return nil
 }
 
-func DeleteConsumer(kongCli gokong.KongAdminClient) error {
+func deleteConsumer(kongCli gokong.KongAdminClient) error {
 	kongConsumers, err := kongCli.Consumers().List(&gokong.ConsumerQueryString{})
 	if err != nil {
 		return err
@@ -77,7 +77,7 @@ func DeleteConsumer(kongCli gokong.KongAdminClient) error {
 	return nil
 }
 
-func DeletePlugin(kongCli gokong.KongAdminClient) error {
+func deletePlugin(kongCli gokong.KongAdminClient) error {
 	kongPlugins, err := kongCli.Plugins().List(&gokong.PluginQueryString{})
 	if err != nil {
 		return err
