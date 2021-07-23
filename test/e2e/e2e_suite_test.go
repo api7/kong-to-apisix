@@ -1,8 +1,6 @@
 package e2e
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/api7/kongtoapisix/pkg/apisix"
@@ -12,9 +10,11 @@ import (
 )
 
 func TestMigrate(t *testing.T) {
-	os.Setenv("EXPORT_PATH", "../../repos/apisix-docker/example/apisix_conf")
-	configPath := filepath.Join("../../", utils.ConfigFilePath)
-	if err := apisix.EnableAPISIXStandalone(configPath); err != nil {
+	var apisixConfig []utils.YamlItem
+	if err := apisix.EnableAPISIXStandalone(&apisixConfig); err != nil {
+		panic(err)
+	}
+	if err := utils.AppendToConfigYaml(&apisixConfig, apisixConfigYamlPath); err != nil {
 		panic(err)
 	}
 	RegisterFailHandler(Fail)
