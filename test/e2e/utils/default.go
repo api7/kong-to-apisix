@@ -54,3 +54,7 @@ func DefaultTarget() *gokong.TargetRequest {
 		Weight: 100,
 	}
 }
+
+func DefaultConsumer() *gokong.ConsumerRequest {
+	return &gokong.ConsumerRequest{}
+}

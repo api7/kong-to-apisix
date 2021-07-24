@@ -1,7 +1,7 @@
 package e2e
 
 import (
-	"net/http"
+	"strings"
 
 	"github.com/globocom/gokong"
 	"github.com/onsi/ginkgo"
@@ -10,7 +10,7 @@ import (
 	"github.com/api7/kong-to-apisix/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("route", func() {
+var _ = ginkgo.Describe("plugins", func() {
 	var kongCli gokong.KongAdminClient
 
 	ginkgo.JustBeforeEach(func() {
@@ -19,7 +19,7 @@ var _ = ginkgo.Describe("route", func() {
 		gomega.Expect(err).To(gomega.BeNil())
 	})
 
-	ginkgo.It("default route and service", func() {
+	ginkgo.It("default rate limit", func() {
 		createdService := utils.DefaultService()
 		createdService.Url = gokong.String(utils.UpstreamAddr)
 		kongService, err := kongCli.Services().Create(createdService)
@@ -31,63 +31,109 @@ var _ = ginkgo.Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		gomega.Expect(err).To(gomega.BeNil())
 
+		createdPlugin := &gokong.PluginRequest{
+			Name: "rate-limiting",
+			Config: map[string]interface{}{
+				"second": 1,
+				"policy": "local",
+			},
+		}
+		_, err = kongCli.Plugins().Create(createdPlugin)
+		gomega.Expect(err).To(gomega.BeNil())
+
 		err = utils.TestMigrate()
 		gomega.Expect(err).To(gomega.BeNil())
 
+		// first time to trigger rate limit
 		utils.Compare(&utils.CompareCase{
-			Path:        "/get/get",
-			CompareBody: true,
+			Path:              "/get/get",
+			CompareStatusCode: 200,
 		})
-	})
-
-	ginkgo.It("kong route disable strip_path", func() {
-		createdService := utils.DefaultService()
-		createdService.Url = gokong.String(utils.UpstreamAddr)
-		kongService, err := kongCli.Services().Create(createdService)
-		gomega.Expect(err).To(gomega.BeNil())
-
-		createdRoute := utils.DefaultRoute()
-		createdRoute.Paths = gokong.StringSlice([]string{"/get"})
-		createdRoute.Service = gokong.ToId(*kongService.Id)
-		createdRoute.StripPath = gokong.Bool(false)
-		_, err = kongCli.Routes().Create(createdRoute)
-		gomega.Expect(err).To(gomega.BeNil())
-
-		err = utils.TestMigrate()
-		gomega.Expect(err).To(gomega.BeNil())
-
-		utils.Compare(&utils.CompareCase{
-			Path:        "/get",
-			CompareBody: true,
-		})
-	})
-
-	ginkgo.It("kong route with host", func() {
-		createdService := utils.DefaultService()
-		createdService.Url = gokong.String(utils.UpstreamAddr)
-		kongService, err := kongCli.Services().Create(createdService)
-		gomega.Expect(err).To(gomega.BeNil())
-
-		createdRoute := utils.DefaultRoute()
-		createdRoute.Paths = gokong.StringSlice([]string{"/get"})
-		createdRoute.Service = gokong.ToId(*kongService.Id)
-		createdRoute.Hosts = gokong.StringSlice([]string{"foo.com"})
-		_, err = kongCli.Routes().Create(createdRoute)
-		gomega.Expect(err).To(gomega.BeNil())
-
-		err = utils.TestMigrate()
-		gomega.Expect(err).To(gomega.BeNil())
 
 		utils.Compare(&utils.CompareCase{
 			Path:              "/get/get",
-			CompareStatusCode: http.StatusNotFound,
-		})
-
-		utils.Compare(&utils.CompareCase{
-			Path:        "/get/get",
-			Headers:     map[string]string{"Host": "foo.com"},
-			CompareBody: true,
+			CompareStatusCode: 429,
 		})
 	})
 
+	ginkgo.It("default proxy cache", func() {
+		createdService := utils.DefaultService()
+		createdService.Url = gokong.String(utils.UpstreamAddr)
+		kongService, err := kongCli.Services().Create(createdService)
+		gomega.Expect(err).To(gomega.BeNil())
+
+		createdRoute := utils.DefaultRoute()
+		createdRoute.Paths = gokong.StringSlice([]string{"/get"})
+		createdRoute.Service = gokong.ToId(*kongService.Id)
+		_, err = kongCli.Routes().Create(createdRoute)
+		gomega.Expect(err).To(gomega.BeNil())
+
+		createdPlugin := &gokong.PluginRequest{
+			Name: "proxy-cache",
+			Config: map[string]interface{}{
+				"strategy": "memory",
+			},
+		}
+		_, err = kongCli.Plugins().Create(createdPlugin)
+		gomega.Expect(err).To(gomega.BeNil())
+
+		err = utils.TestMigrate()
+		gomega.Expect(err).To(gomega.BeNil())
+
+		// first time to trigger cache
+		utils.Compare(&utils.CompareCase{
+			Path: "/get/get",
+		})
+
+		apisixResp, kongResp := utils.GetResps(&utils.CompareCase{
+			Path: "/get/get",
+		})
+		apisixCacheStatus := apisixResp.Header.Get("Apisix-Cache-Status")
+		kongCacheStatus := kongResp.Header.Get("X-Cache-Status")
+		gomega.Ω(strings.ToLower(apisixCacheStatus)).Should(gomega.Equal(strings.ToLower(kongCacheStatus)))
+	})
+
+	ginkgo.It("default key auth", func() {
+		createdService := utils.DefaultService()
+		createdService.Url = gokong.String(utils.UpstreamAddr)
+		kongService, err := kongCli.Services().Create(createdService)
+		gomega.Expect(err).To(gomega.BeNil())
+
+		createdRoute := utils.DefaultRoute()
+		createdRoute.Paths = gokong.StringSlice([]string{"/get"})
+		createdRoute.Service = gokong.ToId(*kongService.Id)
+		kongRoute, err := kongCli.Routes().Create(createdRoute)
+		gomega.Expect(err).To(gomega.BeNil())
+
+		createdPlugin := &gokong.PluginRequest{
+			Name:    "key-auth",
+			RouteId: (*gokong.Id)(kongRoute.Id),
+		}
+		_, err = kongCli.Plugins().Create(createdPlugin)
+		gomega.Expect(err).To(gomega.BeNil())
+
+		createdConsumer := utils.DefaultConsumer()
+		createdConsumer.Username = "consumer"
+		kongConsumer, err := kongCli.Consumers().Create(createdConsumer)
+		gomega.Expect(err).To(gomega.BeNil())
+
+		_, err = kongCli.Consumers().CreatePluginConfig(kongConsumer.Id, "key-auth", "{\"key\": \"apikey\"}")
+		gomega.Expect(err).To(gomega.BeNil())
+
+		err = utils.TestMigrate()
+		gomega.Expect(err).To(gomega.BeNil())
+
+		// without key
+		utils.Compare(&utils.CompareCase{
+			Path:              "/get/get",
+			CompareStatusCode: 401,
+		})
+
+		// with key
+		utils.Compare(&utils.CompareCase{
+			Path:              "/get/get",
+			Headers:           map[string]string{"apikey": "apikey"},
+			CompareStatusCode: 200,
+		})
+	})
 })

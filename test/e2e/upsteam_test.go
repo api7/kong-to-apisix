@@ -3,10 +3,11 @@ package e2e
 import (
 	"strings"
 
-	"github.com/api7/kong-to-apisix/test/e2e/utils"
 	"github.com/globocom/gokong"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
+
+	"github.com/api7/kong-to-apisix/test/e2e/utils"
 )
 
 var _ = ginkgo.Describe("upstream", func() {
@@ -51,8 +52,7 @@ var _ = ginkgo.Describe("upstream", func() {
 		kongRespMap := make(map[string]int)
 		cc := &utils.CompareCase{Path: "/get/get"}
 		for range [10]int{} {
-			apisixResp, kongResp, err := utils.GetResp(cc)
-			gomega.Expect(err).To(gomega.BeNil())
+			apisixResp, kongResp := utils.GetBodys(cc)
 			apisixRespMap[string(apisixResp)]++
 			kongRespMap[string(kongResp)]++
 		}
