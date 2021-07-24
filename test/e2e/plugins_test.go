@@ -1,7 +1,7 @@
 package e2e
 
 import (
-	"strings"
+	"time"
 
 	"github.com/globocom/gokong"
 	"github.com/onsi/ginkgo"
@@ -54,6 +54,13 @@ var _ = ginkgo.Describe("plugins", func() {
 			Path:              "/get/get",
 			CompareStatusCode: 429,
 		})
+
+		// wait till rate limit expire
+		time.Sleep(time.Second)
+		utils.Compare(&utils.CompareCase{
+			Path:              "/get/get",
+			CompareStatusCode: 200,
+		})
 	})
 
 	ginkgo.It("default proxy cache", func() {
@@ -71,7 +78,8 @@ var _ = ginkgo.Describe("plugins", func() {
 		createdPlugin := &gokong.PluginRequest{
 			Name: "proxy-cache",
 			Config: map[string]interface{}{
-				"strategy": "memory",
+				"strategy":  "memory",
+				"cache_ttl": 1,
 			},
 		}
 		_, err = kongCli.Plugins().Create(createdPlugin)
@@ -90,7 +98,18 @@ var _ = ginkgo.Describe("plugins", func() {
 		})
 		apisixCacheStatus := apisixResp.Header.Get("Apisix-Cache-Status")
 		kongCacheStatus := kongResp.Header.Get("X-Cache-Status")
-		gomega.Ω(strings.ToLower(apisixCacheStatus)).Should(gomega.Equal(strings.ToLower(kongCacheStatus)))
+		gomega.Ω(apisixCacheStatus).Should(gomega.Equal("HIT"))
+		gomega.Ω(kongCacheStatus).Should(gomega.Equal("Hit"))
+
+		// wait till rate limit expire
+		time.Sleep(2 * time.Second)
+		apisixResp, kongResp = utils.GetResps(&utils.CompareCase{
+			Path: "/get/get",
+		})
+		apisixCacheStatus = apisixResp.Header.Get("Apisix-Cache-Status")
+		kongCacheStatus = kongResp.Header.Get("X-Cache-Status")
+		gomega.Ω(kongCacheStatus).Should(gomega.Equal("Miss"))
+		gomega.Ω(apisixCacheStatus).Should(gomega.Equal("EXPIRED"))
 	})
 
 	ginkgo.It("default key auth", func() {
