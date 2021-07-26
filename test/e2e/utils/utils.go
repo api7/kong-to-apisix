@@ -10,7 +10,7 @@ import (
 
 	"github.com/globocom/gokong"
 	"github.com/onsi/ginkgo"
-	"github.com/pkg/errors"
+	"github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
 
 	"github.com/api7/kong-to-apisix/pkg/apisix"
@@ -35,10 +35,11 @@ type TestCase struct {
 }
 
 type CompareCase struct {
-	Path             string
-	Url              string
-	Headers          map[string]string
-	ExpectStatusCode int
+	Path              string
+	Url               string
+	Headers           map[string]string
+	CompareBody       bool
+	CompareStatusCode int
 }
 
 func GetKongConfig() ([]byte, error) {
@@ -68,22 +69,20 @@ func TestMigrate() error {
 		return err
 	}
 
-	prettier, err := json.MarshalIndent(kongConfig, "", "\t")
-	if err != nil {
-		return err
+	prettier, err := json.MarshalIndent(*kongConfig, "", "\t")
+	if err == nil {
+		fmt.Fprintf(ginkgo.GinkgoWriter, "kong yaml: %s\n", string(prettier))
 	}
-	fmt.Fprintf(ginkgo.GinkgoWriter, "kong yaml: %s\n", string(prettier))
 
 	apisixDecl, apisixConfig, err := kong.Migrate(kongConfig)
 	if err != nil {
 		return err
 	}
 
-	prettier, err = json.MarshalIndent(apisixDecl, "", "\t")
-	if err != nil {
-		return err
+	prettier, err = json.MarshalIndent(*apisixDecl, "", "\t")
+	if err == nil {
+		fmt.Fprintf(ginkgo.GinkgoWriter, "apisix yaml: %s\n", string(prettier))
 	}
-	fmt.Fprintf(ginkgo.GinkgoWriter, "apisix yaml: %s\n", string(prettier))
 
 	apisixYaml, err := apisix.MarshalYaml(apisixDecl)
 	if err != nil {
@@ -103,26 +102,69 @@ func TestMigrate() error {
 	return nil
 }
 
-func GetResp(c *CompareCase) (string, string, error) {
+func GetResps(c *CompareCase) (*http.Response, *http.Response) {
 	c.Url = kongAddr + c.Path
-	kongResp, err := getBody(c)
-	if err != nil {
-		return "", "", errors.Wrap(err, "kong")
-	}
-	c.Url = apisixAddr + c.Path
-	apisixResp, err := getBody(c)
-	if err != nil {
-		return "", "", errors.Wrap(err, "apisix")
-	}
+	kongResp, err := getResp(c)
+	gomega.Expect(err).To(gomega.BeNil())
+	kongResp.Body.Close()
 
-	ginkgo.GinkgoT().Logf("Kong: %s, APISIX: %s", kongResp, apisixResp)
-	return apisixResp, kongResp, nil
+	c.Url = apisixAddr + c.Path
+	apisixResp, err := getResp(c)
+	gomega.Expect(err).To(gomega.BeNil())
+	apisixResp.Body.Close()
+
+	return apisixResp, kongResp
 }
 
-func getBody(c *CompareCase) (string, error) {
+func GetBodys(c *CompareCase) (string, string) {
+	c.Url = kongAddr + c.Path
+	kongResp, err := getResp(c)
+	gomega.Expect(err).To(gomega.BeNil())
+	defer kongResp.Body.Close()
+
+	c.Url = apisixAddr + c.Path
+	apisixResp, err := getResp(c)
+	gomega.Expect(err).To(gomega.BeNil())
+	defer apisixResp.Body.Close()
+
+	kongBody, err := getBody(kongResp)
+	gomega.Expect(err).To(gomega.BeNil())
+	apisixBody, err := getBody(apisixResp)
+	gomega.Expect(err).To(gomega.BeNil())
+
+	return kongBody, apisixBody
+}
+
+// do compare here
+func Compare(c *CompareCase) {
+	c.Url = kongAddr + c.Path
+	kongResp, err := getResp(c)
+	gomega.Expect(err).To(gomega.BeNil())
+	defer kongResp.Body.Close()
+
+	c.Url = apisixAddr + c.Path
+	apisixResp, err := getResp(c)
+	gomega.Expect(err).To(gomega.BeNil())
+	defer apisixResp.Body.Close()
+
+	if c.CompareStatusCode != 0 {
+		gomega.Ω(kongResp.StatusCode).Should(gomega.Equal(c.CompareStatusCode))
+		gomega.Ω(apisixResp.StatusCode).Should(gomega.Equal(c.CompareStatusCode))
+	}
+
+	if c.CompareBody {
+		kongBody, err := getBody(kongResp)
+		gomega.Expect(err).To(gomega.BeNil())
+		apisixBody, err := getBody(apisixResp)
+		gomega.Expect(err).To(gomega.BeNil())
+		gomega.Ω(apisixBody).Should(gomega.Equal(kongBody))
+	}
+}
+
+func getResp(c *CompareCase) (*http.Response, error) {
 	req, err := http.NewRequest("GET", c.Url, nil)
 	if err != nil {
-		return "", errors.Wrap(err, "http new request error")
+		return nil, err
 	}
 	for k, v := range c.Headers {
 		if k == "Host" {
@@ -134,21 +176,16 @@ func getBody(c *CompareCase) (string, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", errors.Wrap(err, "http get error")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == c.ExpectStatusCode {
-		return "", nil
+		return nil, err
 	}
 
+	return resp, nil
+}
+
+func getBody(resp *http.Response) (string, error) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.Wrap(err, "read body error")
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Sprintf("%d ", resp.StatusCode), errors.Errorf("read body error: %s", string(body))
+		return "", err
 	}
 
 	return string(body), nil

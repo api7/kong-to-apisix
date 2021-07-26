@@ -3,10 +3,11 @@ package e2e
 import (
 	"testing"
 
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
+
 	"github.com/api7/kong-to-apisix/pkg/apisix"
 	"github.com/api7/kong-to-apisix/pkg/utils"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 
 	e2eutils "github.com/api7/kong-to-apisix/test/e2e/utils"
 )
@@ -19,6 +20,6 @@ func TestMigrate(t *testing.T) {
 	if err := utils.AppendToConfigYaml(&apisixConfig, e2eutils.ApisixConfigYamlPath); err != nil {
 		panic(err)
 	}
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "migrate suite")
+	gomega.RegisterFailHandler(ginkgo.Fail)
+	ginkgo.RunSpecs(t, "migrate suite")
 }

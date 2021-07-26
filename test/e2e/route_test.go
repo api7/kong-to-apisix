@@ -34,11 +34,10 @@ var _ = ginkgo.Describe("route", func() {
 		err = utils.TestMigrate()
 		gomega.Expect(err).To(gomega.BeNil())
 
-		apisixResp, kongResp, err := utils.GetResp(&utils.CompareCase{
-			Path: "/get/get",
+		utils.Compare(&utils.CompareCase{
+			Path:        "/get/get",
+			CompareBody: true,
 		})
-		gomega.Expect(err).To(gomega.BeNil())
-		gomega.Expect(apisixResp == kongResp).To(gomega.BeTrue())
 	})
 
 	ginkgo.It("kong route disable strip_path", func() {
@@ -57,11 +56,10 @@ var _ = ginkgo.Describe("route", func() {
 		err = utils.TestMigrate()
 		gomega.Expect(err).To(gomega.BeNil())
 
-		apisixResp, kongResp, err := utils.GetResp(&utils.CompareCase{
-			Path: "/get",
+		utils.Compare(&utils.CompareCase{
+			Path:        "/get",
+			CompareBody: true,
 		})
-		gomega.Expect(err).To(gomega.BeNil())
-		gomega.Expect(apisixResp == kongResp).To(gomega.BeTrue())
 	})
 
 	ginkgo.It("kong route with host", func() {
@@ -80,19 +78,16 @@ var _ = ginkgo.Describe("route", func() {
 		err = utils.TestMigrate()
 		gomega.Expect(err).To(gomega.BeNil())
 
-		apisixResp, kongResp, err := utils.GetResp(&utils.CompareCase{
-			Path:             "/get/get",
-			ExpectStatusCode: http.StatusNotFound,
+		utils.Compare(&utils.CompareCase{
+			Path:              "/get/get",
+			CompareStatusCode: http.StatusNotFound,
 		})
-		gomega.Expect(err).To(gomega.BeNil())
-		gomega.Expect(apisixResp == kongResp).To(gomega.BeTrue())
 
-		apisixResp, kongResp, err = utils.GetResp(&utils.CompareCase{
-			Path:    "/get/get",
-			Headers: map[string]string{"Host": "foo.com"},
+		utils.Compare(&utils.CompareCase{
+			Path:        "/get/get",
+			Headers:     map[string]string{"Host": "foo.com"},
+			CompareBody: true,
 		})
-		gomega.Expect(err).To(gomega.BeNil())
-		gomega.Expect(apisixResp == kongResp).To(gomega.BeTrue())
 	})
 
 })

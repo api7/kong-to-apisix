@@ -50,5 +50,4 @@ jobs:
       - name: Set up tmate session
         if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v2
-        with:
-          timeout-minutes: 15
+        timeout-minutes: 15
