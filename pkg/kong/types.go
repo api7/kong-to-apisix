@@ -102,7 +102,7 @@ type Consumers []struct {
 		Key            string `yaml:"key"`
 		Secret         string `yaml:"secret"`
 		Algorithm      string `yaml:"algorithm"`
-		RSA_Public_key string `yaml:"rsa_public_key"`
+		RSA_Public_Key string `yaml:"rsa_public_key"`
 	} `yaml:"jwt_credentials,omitempty"`
 }
 

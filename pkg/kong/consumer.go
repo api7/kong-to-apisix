@@ -25,7 +25,7 @@ func MigrateConsumer(kongConfig *KongConfig) (*[]v1.Consumer, error) {
 			pluginConfig["key"] = c.KeyAuthCredentials[0].Key
 
 			apisixConsumer.Plugins = v1.Plugins{"key-auth": pluginConfig}
-		} else if c.JWTCredentials != nil {
+		if c.JWTCredentials != nil {
 			cred := c.JWTCredentials[0]
 			pluginConfig := make(map[string]interface{})
 			pluginConfig["key"] = cred.Key
@@ -35,10 +35,11 @@ func MigrateConsumer(kongConfig *KongConfig) (*[]v1.Consumer, error) {
 				fmt.Printf("APISIX JWT have not support %s yet\n", algorithm)
 			} else {
 				pluginConfig["algorithm"] = algorithm
-				if algorithm == "HS256" {
+				if cred.Secret != "" {
 					pluginConfig["secret"] = cred.Secret
-				} else if algorithm == "RS256" {
-					pluginConfig["rsa_public_key"] = cred.RSA_Public_key
+				}
+				if cred.RSA_Public_Key != "" {
+					pluginConfig["rsa_public_key"] = cred.RSA_Public_Key
 				}
 			}
 		}
