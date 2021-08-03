@@ -1,22 +1,25 @@
 package e2e
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/api7/kongtoapisix/pkg/apisix"
-	"github.com/api7/kongtoapisix/pkg/utils"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
+
+	"github.com/api7/kong-to-apisix/pkg/apisix"
+	"github.com/api7/kong-to-apisix/pkg/utils"
+
+	e2eutils "github.com/api7/kong-to-apisix/test/e2e/utils"
 )
 
 func TestMigrate(t *testing.T) {
-	os.Setenv("EXPORT_PATH", "../../repos/apisix-docker/example/apisix_conf")
-	configPath := filepath.Join("../../", utils.ConfigFilePath)
-	if err := apisix.EnableAPISIXStandalone(configPath); err != nil {
+	var apisixConfig []utils.YamlItem
+	if err := apisix.EnableAPISIXStandalone(&apisixConfig); err != nil {
 		panic(err)
 	}
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "migrate suite")
+	if err := utils.AppendToConfigYaml(&apisixConfig, e2eutils.ApisixConfigYamlPath); err != nil {
+		panic(err)
+	}
+	gomega.RegisterFailHandler(ginkgo.Fail)
+	ginkgo.RunSpecs(t, "migrate suite")
 }

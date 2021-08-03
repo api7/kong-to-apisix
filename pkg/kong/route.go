@@ -5,9 +5,10 @@ import (
 	"strconv"
 
 	v1 "github.com/apache/apisix-ingress-controller/pkg/types/apisix/v1"
+	"github.com/api7/kong-to-apisix/pkg/utils"
 )
 
-func MigrateRoute(kongConfig *KongConfig) (*[]v1.Route, error) {
+func MigrateRoute(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*[]v1.Route, error) {
 	kongServices := kongConfig.Services
 
 	var apisixRoutes []v1.Route
@@ -69,11 +70,14 @@ func MigrateRoute(kongConfig *KongConfig) (*[]v1.Route, error) {
 			for _, p := range r.Plugins {
 				if f, ok := pluginMap[p.Name]; ok {
 					if p.Enabled {
-						if apisixPlugin, err := f(p); err != nil {
+						if apisixPlugin, configYaml, err := f(p); err != nil {
 							return nil, err
 						} else {
 							for k, v := range apisixPlugin {
 								plugins[k] = v
+							}
+							for _, c := range configYaml {
+								*configYamlAll = append(*configYamlAll, c)
 							}
 						}
 					}

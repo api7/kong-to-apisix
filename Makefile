@@ -4,4 +4,4 @@ test:
 
 .PHONY: build
 build:
-	go build -o bin/kong2apisix ./cmd/kong-to-apisix/main.go
+	go build -o bin/kong-to-apisix ./cmd/kong-to-apisix/main.go

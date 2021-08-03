@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	v1 "github.com/apache/apisix-ingress-controller/pkg/types/apisix/v1"
-	"github.com/api7/kongtoapisix/pkg/utils"
+	"github.com/api7/kong-to-apisix/pkg/utils"
 )
 
-var pluginMap = map[string]func(p Plugin) (v1.Plugins, error){
+var pluginMap = map[string]func(p Plugin) (v1.Plugins, []utils.YamlItem, error){
 	"proxy-cache":   proxyCache,
 	"key-auth":      keyAuth,
 	"rate-limiting": rateLimiting,
@@ -16,23 +16,25 @@ var pluginMap = map[string]func(p Plugin) (v1.Plugins, error){
 
 // TODO: some configuration need to be configured in config.yaml
 //       including cache_ttl
-func proxyCache(p Plugin) (v1.Plugins, error) {
+func proxyCache(p Plugin) (v1.Plugins, []utils.YamlItem, error) {
 	pluginConfig := make(map[string]interface{})
 	pluginConfig["cache_method"] = p.Config["request_method"]
 	pluginConfig["cache_http_status"] = p.Config["response_code"]
+
+	var configYaml []utils.YamlItem
 	if cacheTTL, ok := p.Config["cache_ttl"].(int); ok {
-		err := utils.AddValueToYaml(utils.ConfigFilePath, fmt.Sprintf("%v", cacheTTL)+"s", "apisix", "proxy_cache", "cache_ttl")
-		if err != nil {
-			return nil, err
-		}
+		configYaml = append(configYaml, utils.YamlItem{
+			Value: fmt.Sprintf("%v", cacheTTL) + "s",
+			Path:  []interface{}{"apisix", "proxy_cache", "cache_ttl"},
+		})
 	}
 
-	return v1.Plugins{"proxy-cache": pluginConfig}, nil
+	return v1.Plugins{"proxy-cache": pluginConfig}, configYaml, nil
 }
 
 // TODO: kong could configure rate limiting in different time range
 //       for now fetch the value in minimum time range
-func rateLimiting(p Plugin) (v1.Plugins, error) {
+func rateLimiting(p Plugin) (v1.Plugins, []utils.YamlItem, error) {
 	pluginConfig := make(map[string]interface{})
 
 	if p.Config["second"] != nil {
@@ -72,19 +74,19 @@ func rateLimiting(p Plugin) (v1.Plugins, error) {
 	}
 
 	pluginConfig["rejected_code"] = 429
-	return v1.Plugins{"limit-count": pluginConfig}, nil
+	return v1.Plugins{"limit-count": pluginConfig}, nil, nil
 }
 
-func keyAuth(p Plugin) (v1.Plugins, error) {
+func keyAuth(p Plugin) (v1.Plugins, []utils.YamlItem, error) {
 	emptyMap := make(map[string]interface{})
 
-	return v1.Plugins{"key-auth": emptyMap}, nil
+	return v1.Plugins{"key-auth": emptyMap}, nil, nil
 }
 
-func jwt(p Plugin) (v1.Plugins, error) {
+func jwt(p Plugin) (v1.Plugins, []utils.YamlItem, error) {
 	pluginConfig := make(map[string]interface{})
 	pluginConfig["base64_secret"] = p.Config["secret_is_base64"]
 	pluginConfig["exp"] = p.Config["maximum_expiration"]
 
-	return v1.Plugins{"jwt": pluginConfig}, nil
+	return v1.Plugins{"jwt": pluginConfig}, nil, nil
 }

@@ -4,9 +4,10 @@ import (
 	"fmt"
 
 	v1 "github.com/apache/apisix-ingress-controller/pkg/types/apisix/v1"
+	"github.com/api7/kong-to-apisix/pkg/utils"
 )
 
-func MigrateConsumer(kongConfig *KongConfig) (*[]v1.Consumer, error) {
+func MigrateConsumer(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*[]v1.Consumer, error) {
 	kongConsumers := kongConfig.Consumers
 
 	var apisixConsumers []v1.Consumer

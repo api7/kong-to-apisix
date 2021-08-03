@@ -7,10 +7,11 @@ import (
 	"strings"
 
 	v1 "github.com/apache/apisix-ingress-controller/pkg/types/apisix/v1"
+	"github.com/api7/kong-to-apisix/pkg/utils"
 	"github.com/pkg/errors"
 )
 
-func MigrateUpstream(kongConfig *KongConfig) (*[]v1.Upstream, error) {
+func MigrateUpstream(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*[]v1.Upstream, error) {
 	kongUpstreams := kongConfig.Upstreams
 	kongServices := kongConfig.Services
 	upstreamsMap := make(map[string]Upstream)
