@@ -11,6 +11,7 @@ var pluginMap = map[string]func(p Plugin) (v1.Plugins, []utils.YamlItem, error){
 	"proxy-cache":   proxyCache,
 	"key-auth":      keyAuth,
 	"rate-limiting": rateLimiting,
+	"jwt":           jwt,
 }
 
 // TODO: some configuration need to be configured in config.yaml
@@ -77,10 +78,15 @@ func rateLimiting(p Plugin) (v1.Plugins, []utils.YamlItem, error) {
 }
 
 func keyAuth(p Plugin) (v1.Plugins, []utils.YamlItem, error) {
-	pluginConfig := make(map[string]interface{})
-	pluginConfig["key"] = p.Config["key_names"]
-
 	emptyMap := make(map[string]interface{})
 
 	return v1.Plugins{"key-auth": emptyMap}, nil, nil
+}
+
+func jwt(p Plugin) (v1.Plugins, []utils.YamlItem, error) {
+	pluginConfig := make(map[string]interface{})
+	pluginConfig["base64_secret"] = p.Config["secret_is_base64"]
+	pluginConfig["exp"] = p.Config["maximum_expiration"]
+
+	return v1.Plugins{"jwt": pluginConfig}, nil, nil
 }
