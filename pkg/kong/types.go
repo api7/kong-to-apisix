@@ -98,6 +98,12 @@ type Consumers []struct {
 	KeyAuthCredentials []struct {
 		Key string `yaml:"key"`
 	} `yaml:"keyauth_credentials,omitempty"`
+	JWTCredentials []struct {
+		Key            string `yaml:"key"`
+		Secret         string `yaml:"secret"`
+		Algorithm      string `yaml:"algorithm"`
+		RSA_Public_key string `yaml:"rsa_public_key"`
+	} `yaml:"jwt_credentials,omitempty"`
 }
 
 type Plugins []Plugin

@@ -1,6 +1,8 @@
 package kong
 
 import (
+	"fmt"
+
 	v1 "github.com/apache/apisix-ingress-controller/pkg/types/apisix/v1"
 )
 
@@ -18,11 +20,27 @@ func MigrateConsumer(kongConfig *KongConfig) (*[]v1.Consumer, error) {
 		}
 
 		// TODO: need to test then it got multiple key
-		if c.KeyAuthCredentials[0].Key != "" {
+		if c.KeyAuthCredentials != nil {
 			pluginConfig := make(map[string]interface{})
 			pluginConfig["key"] = c.KeyAuthCredentials[0].Key
 
 			apisixConsumer.Plugins = v1.Plugins{"key-auth": pluginConfig}
+		} else if c.JWTCredentials != nil {
+			cred := c.JWTCredentials[0]
+			pluginConfig := make(map[string]interface{})
+			pluginConfig["key"] = cred.Key
+			pluginConfig["secret"] = cred.Secret
+			algorithm := cred.Algorithm
+			if algorithm == "HS384" || algorithm == "ES256" {
+				fmt.Printf("APISIX JWT have not support %s yet\n", algorithm)
+			} else {
+				pluginConfig["algorithm"] = algorithm
+				if algorithm == "HS256" {
+					pluginConfig["secret"] = cred.Secret
+				} else if algorithm == "RS256" {
+					pluginConfig["rsa_public_key"] = cred.RSA_Public_key
+				}
+			}
 		}
 		apisixConsumers = append(apisixConsumers, *apisixConsumer)
 	}
