@@ -26,6 +26,7 @@ func MigrateConsumer(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*
 			pluginConfig["key"] = c.KeyAuthCredentials[0].Key
 
 			apisixConsumer.Plugins = v1.Plugins{"key-auth": pluginConfig}
+		}
 		if c.JWTCredentials != nil {
 			cred := c.JWTCredentials[0]
 			pluginConfig := make(map[string]interface{})
