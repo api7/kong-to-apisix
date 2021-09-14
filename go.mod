@@ -1,6 +1,6 @@
 module github.com/api7/kong-to-apisix
 
-go 1.14
+go 1.16
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
