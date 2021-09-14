@@ -15,3 +15,6 @@ bin
 repos
 /apisix.yaml
 /kong.yaml
+
+.idea
+vendor

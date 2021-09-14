@@ -12,7 +12,9 @@ Only tested with APISIX 2.7 and Kong 2.4 for now.
 ## How to use
 1. Dump Kong Configuration with Deck. See https://docs.konghq.com/deck/1.7.x/guides/backup-restore/ for details.
 
-2. Run Kong-To-APISIX, and it would generate `apisix.yaml` as declarative configuration file for APISIX.
+2. Build `Kong to APISIX`, go version require `1.16+`。
+
+3. Run Kong-To-APISIX, and it would generate `apisix.yaml` as declarative configuration file for APISIX.
 
    ```shell
    $ make build
@@ -20,7 +22,7 @@ Only tested with APISIX 2.7 and Kong 2.4 for now.
    migrate succeed
    ```
 
-3. Configure APISIX with `apisix.yaml`, see https://apisix.apache.org/docs/apisix/stand-alone for details.
+4. Configure APISIX with `apisix.yaml`, see https://apisix.apache.org/docs/apisix/stand-alone for details.
 
 If more help needed, you could refer [detail steps](docs/how-to-deploy.md)
 
