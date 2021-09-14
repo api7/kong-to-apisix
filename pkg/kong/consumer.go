@@ -19,7 +19,7 @@ func MigrateConsumer(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*
 		}
 
 		// TODO: need to test then it got multiple key
-		if c.KeyAuthCredentials[0].Key != "" {
+		if len(c.KeyAuthCredentials) > 0 && c.KeyAuthCredentials[0].Key != "" {
 			pluginConfig := make(map[string]interface{})
 			pluginConfig["key"] = c.KeyAuthCredentials[0].Key
 
