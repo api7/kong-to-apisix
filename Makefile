@@ -8,4 +8,4 @@ build:
 
 .PHONY: unit-test
 unit-test:
-	go test --count=1 ./pkg/kong
+	go test -race --count=1 ./pkg/kong

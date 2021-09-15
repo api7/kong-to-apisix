@@ -1,9 +1,10 @@
 package kong
 
 import (
+	"testing"
+
 	"github.com/api7/kong-to-apisix/pkg/utils"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestMigrateConsumer(t *testing.T) {
