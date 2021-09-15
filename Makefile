@@ -5,3 +5,7 @@ test:
 .PHONY: build
 build:
 	go build -o bin/kong-to-apisix ./cmd/kong-to-apisix/main.go
+
+.PHONY: unit-test
+unit-test:
+	go test --count=1 ./pkg/kong
