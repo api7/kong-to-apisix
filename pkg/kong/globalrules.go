@@ -2,16 +2,15 @@ package kong
 
 import (
 	"fmt"
-
-	v1 "github.com/apache/apisix-ingress-controller/pkg/types/apisix/v1"
+	"github.com/api7/kong-to-apisix/pkg/apisix"
 	"github.com/api7/kong-to-apisix/pkg/utils"
 )
 
 // TODO: need to take care of plugin precedence
 // https://docs.konghq.com/gateway-oss/2.4.x/admin-api/#precedence
-func MigrateGlobalRules(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*[]v1.GlobalRule, error) {
+func MigrateGlobalRules(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*[]apisix.GlobalRule, error) {
 	kongGlobalPlugins := kongConfig.Plugins
-	var apisixGlobalRules []v1.GlobalRule
+	var apisixGlobalRules []apisix.GlobalRule
 
 	for _, p := range kongGlobalPlugins {
 		//fmt.Printf("got plugin: %#v\n", p)
@@ -20,8 +19,8 @@ func MigrateGlobalRules(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem)
 				if apisixPlugin, configYaml, err := f(p); err != nil {
 					return nil, err
 				} else {
-					apisixGlobalRule := v1.GlobalRule{
-						Plugins: apisixPlugin,
+					apisixGlobalRule := apisix.GlobalRule{
+						Plugins: apisix.Plugins(apisixPlugin),
 					}
 					apisixGlobalRules = append(apisixGlobalRules, apisixGlobalRule)
 					for _, c := range configYaml {
