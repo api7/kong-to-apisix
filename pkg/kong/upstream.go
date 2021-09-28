@@ -2,16 +2,16 @@ package kong
 
 import (
 	"fmt"
+	"github.com/api7/kong-to-apisix/pkg/apisix"
 	"net/url"
 	"strconv"
 	"strings"
 
-	v1 "github.com/apache/apisix-ingress-controller/pkg/types/apisix/v1"
 	"github.com/api7/kong-to-apisix/pkg/utils"
 	"github.com/pkg/errors"
 )
 
-func MigrateUpstream(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*[]v1.Upstream, error) {
+func MigrateUpstream(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*[]apisix.Upstream, error) {
 	kongUpstreams := kongConfig.Upstreams
 	kongServices := kongConfig.Services
 	upstreamsMap := make(map[string]Upstream)
@@ -19,29 +19,27 @@ func MigrateUpstream(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*
 		upstreamsMap[u.Name] = u
 	}
 
-	var apisixUpstreams []v1.Upstream
+	var apisixUpstreams []apisix.Upstream
 	for i, s := range kongServices {
 		kongConfig.Services[i].ID = strconv.Itoa(i)
 		// TODO: gokong not support lbAlgorithm yet
-		apisixUpstream := &v1.Upstream{
-			Metadata: v1.Metadata{
-				ID: strconv.Itoa(i),
-			},
+		apisixUpstream := &apisix.Upstream{
+			ID:      strconv.Itoa(i),
 			Type:    "roundrobin",
 			Scheme:  s.Protocol,
-			Retries: s.Retries,
-			Timeout: &v1.UpstreamTimeout{
-				Connect: s.ConnectTimeout / 1000,
-				Send:    s.WriteTimeout / 1000,
-				Read:    s.ReadTimeout / 1000,
+			Retries: uint(s.Retries),
+			Timeout: apisix.UpstreamTimeout{
+				Connect: uint(s.ConnectTimeout) / 1000,
+				Send:    uint(s.WriteTimeout) / 1000,
+				Read:    uint(s.ReadTimeout) / 1000,
 			},
 		}
 
 		if s.Name != "" {
-			apisixUpstream.Metadata.Name = s.Name
+			apisixUpstream.Name = s.Name
 		}
 
-		var upstreamNodes []v1.UpstreamNode
+		var upstreamNodes []apisix.UpstreamNode
 
 		// if service is bind to upstream
 		if upstream, ok := upstreamsMap[s.Host]; ok {
@@ -75,14 +73,14 @@ func MigrateUpstream(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*
 				if err != nil {
 					return nil, err
 				}
-				upstreamNodes = append(upstreamNodes, v1.UpstreamNode{
+				upstreamNodes = append(upstreamNodes, apisix.UpstreamNode{
 					Host:   u.Hostname(),
 					Port:   port,
 					Weight: t.Weight,
 				})
 			}
 		} else {
-			upstreamNodes = []v1.UpstreamNode{{
+			upstreamNodes = []apisix.UpstreamNode{{
 				Host:   s.Host,
 				Port:   s.Port,
 				Weight: 1,

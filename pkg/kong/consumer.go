@@ -1,20 +1,20 @@
 package kong
 
 import (
-	v1 "github.com/apache/apisix-ingress-controller/pkg/types/apisix/v1"
+	"github.com/api7/kong-to-apisix/pkg/apisix"
 	"github.com/api7/kong-to-apisix/pkg/utils"
 )
 
-func MigrateConsumer(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*[]v1.Consumer, error) {
+func MigrateConsumer(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*[]apisix.Consumer, error) {
 	kongConsumers := kongConfig.Consumers
 
-	var apisixConsumers []v1.Consumer
+	var apisixConsumers []apisix.Consumer
 	for _, c := range kongConsumers {
 		username := c.Username
 		if username == "" {
 			username = c.CustomId
 		}
-		apisixConsumer := &v1.Consumer{
+		apisixConsumer := &apisix.Consumer{
 			Username: username,
 		}
 
@@ -23,7 +23,7 @@ func MigrateConsumer(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*
 			pluginConfig := make(map[string]interface{})
 			pluginConfig["key"] = c.KeyAuthCredentials[0].Key
 
-			apisixConsumer.Plugins = v1.Plugins{"key-auth": pluginConfig}
+			apisixConsumer.Plugins = apisix.Plugins{"key-auth": pluginConfig}
 		}
 		apisixConsumers = append(apisixConsumers, *apisixConsumer)
 	}
