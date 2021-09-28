@@ -1,10 +1,11 @@
 package apisix
 
 type Config struct {
-	Routes      Routes      `yaml:"routes"`
-	Upstreams   Upstreams   `yaml:"upstreams"`
-	GlobalRules GlobalRules `yaml:"global_rules"`
-	Consumers   Consumers   `yaml:"consumers"`
+	Services    Services    `json:"services,omitempty" yaml:"services,omitempty"`
+	Routes      Routes      `json:"routes,omitempty" yaml:"routes,omitempty"`
+	Upstreams   Upstreams   `json:"upstreams,omitempty" yaml:"upstreams,omitempty"`
+	GlobalRules GlobalRules `json:"global_rules,omitempty" yaml:"global_rules,omitempty"`
+	Consumers   Consumers   `json:"consumers,omitempty" yaml:"consumers,omitempty"`
 }
 
 // Route Configuration

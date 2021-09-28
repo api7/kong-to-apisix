@@ -1,10 +1,10 @@
 package kong
 
 type Config struct {
-	Services  Services  `yaml:"services"`
-	Consumers Consumers `yaml:"consumers"`
-	Plugins   Plugins   `yaml:"plugins"`
-	Upstreams Upstreams `yaml:"upstreams"`
+	Services  Services  `json:"services,omitempty" yaml:"services,omitempty"`
+	Consumers Consumers `json:"consumers,omitempty" yaml:"consumers,omitempty"`
+	Plugins   Plugins   `json:"plugins,omitempty" yaml:"plugins,omitempty"`
+	Upstreams Upstreams `json:"upstreams,omitempty" yaml:"upstreams,omitempty"`
 }
 
 // Common Configuration
