@@ -8,10 +8,10 @@ import (
 )
 
 func TestMigrateConsumer(t *testing.T) {
-	configYaml, kongConsumers := &[]utils.YamlItem{}, &KongConfig{
+	configYaml, kongConsumers := &[]utils.YamlItem{}, &Config{
 		Consumers: Consumers{
 			{
-				CustomId: "test-id-01",
+				CustomID: "test-id-01",
 				Username: "test-user-01",
 				KeyAuthCredentials: []struct {
 					Key string `yaml:"key"`
@@ -22,7 +22,7 @@ func TestMigrateConsumer(t *testing.T) {
 				},
 			},
 			{
-				CustomId:           "test-id-02",
+				CustomID:           "test-id-02",
 				Username:           "test-user-02",
 				KeyAuthCredentials: nil,
 			},
@@ -31,7 +31,7 @@ func TestMigrateConsumer(t *testing.T) {
 
 	apisixConsumers, err := MigrateConsumer(kongConsumers, configYaml)
 	assert.NoError(t, err)
-	assert.Equal(t, len(kongConsumers.Consumers), len(*apisixConsumers))
-	assert.Equal(t, (*apisixConsumers)[0].Username, "test-user-01")
-	assert.Equal(t, (*apisixConsumers)[1].Username, "test-user-02")
+	assert.Equal(t, len(kongConsumers.Consumers), len(apisixConsumers))
+	assert.Equal(t, (apisixConsumers)[0].Username, "test-user-01")
+	assert.Equal(t, (apisixConsumers)[1].Username, "test-user-02")
 }

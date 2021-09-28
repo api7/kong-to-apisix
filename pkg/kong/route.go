@@ -8,10 +8,10 @@ import (
 	"github.com/api7/kong-to-apisix/pkg/utils"
 )
 
-func MigrateRoute(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*[]apisix.Route, error) {
+func MigrateRoute(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.Routes, error) {
 	kongServices := kongConfig.Services
 
-	var apisixRoutes []apisix.Route
+	var apisixRoutes apisix.Routes
 	i := 0
 	for _, s := range kongServices {
 		for _, r := range s.Routes {
@@ -87,7 +87,7 @@ func MigrateRoute(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*[]a
 		}
 	}
 
-	return &apisixRoutes, nil
+	return apisixRoutes, nil
 }
 
 func addProxyRewrite(route *apisix.Route) error {

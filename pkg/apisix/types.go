@@ -1,10 +1,10 @@
 package apisix
 
 type Config struct {
-	Routes      *[]Route      `yaml:"routes"`
-	Upstreams   *[]Upstream   `yaml:"upstreams"`
-	GlobalRules *[]GlobalRule `yaml:"global_rules"`
-	Consumers   *[]Consumer   `yaml:"consumers"`
+	Routes      Routes      `yaml:"routes"`
+	Upstreams   Upstreams   `yaml:"upstreams"`
+	GlobalRules GlobalRules `yaml:"global_rules"`
+	Consumers   Consumers   `yaml:"consumers"`
 }
 
 // Route Configuration
@@ -34,6 +34,8 @@ type Route struct {
 	Status          uint              `json:"status,omitempty" yaml:"status,omitempty"`
 }
 
+type Routes []Route
+
 // Service Configuration
 // Service apisix route definition
 type Service struct {
@@ -48,6 +50,8 @@ type Service struct {
 	Plugins         Plugins           `json:"plugins,omitempty" yaml:"plugins,omitempty"`
 }
 
+type Services []Service
+
 // Consumer Configuration
 // Consumer is the apisix consumer definition.
 type Consumer struct {
@@ -56,6 +60,8 @@ type Consumer struct {
 	Labels   map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 	Plugins  Plugins           `json:"plugins,omitempty" yaml:"plugins,omitempty"`
 }
+
+type Consumers []Consumer
 
 // Upstream Configuration
 // Upstream is the apisix upstream definition.
@@ -80,6 +86,8 @@ type Upstream struct {
 	TLS           UpstreamTLS           `json:"tls,omitempty" yaml:"tls,omitempty"`
 	KeepalivePool UpstreamKeepalivePool `json:"keepalive_pool,omitempty" yaml:"keepalive_pool,omitempty"`
 }
+
+type Upstreams []Upstream
 
 // UpstreamTimeout is the apisix upstream.timeout definition.
 type UpstreamTimeout struct {
@@ -175,6 +183,8 @@ type SSL struct {
 	Status uint              `json:"status,omitempty" yaml:"status,omitempty"`
 }
 
+type SSLs []SSL
+
 // SSLClient is the apisix ssl.client definition.
 type SSLClient struct {
 	CA    string `json:"ca,omitempty" yaml:"ca,omitempty"`
@@ -191,3 +201,5 @@ type GlobalRule struct {
 	ID      string  `json:"id,omitempty" yaml:"id,omitempty"`
 	Plugins Plugins `json:"plugins,omitempty" yaml:"plugins,omitempty"`
 }
+
+type GlobalRules []GlobalRule
