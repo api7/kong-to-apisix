@@ -18,7 +18,7 @@ fetch_docker_repos() {
     fi
 
     if [[ ! -d ${BASEDIR}"/repos/kong-docker" ]]; then
-        git clone -b 2.4.0 https://github.com/Kong/docker-kong.git ${BASEDIR}/repos/kong-docker
+        git clone --depth=1 --branch 2.4.0 https://github.com/Kong/docker-kong.git ${BASEDIR}/repos/kong-docker
     fi
 }
 
