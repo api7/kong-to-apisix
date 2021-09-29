@@ -5,16 +5,16 @@ import (
 	"github.com/api7/kong-to-apisix/pkg/utils"
 )
 
-func MigrateConsumer(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.Consumers, error) {
+func MigrateConsumer(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*[]apisix.Consumer, error) {
 	kongConsumers := kongConfig.Consumers
 
-	var apisixConsumers apisix.Consumers
+	var apisixConsumers []apisix.Consumer
 	for _, c := range kongConsumers {
 		username := c.Username
 		if username == "" {
-			username = c.CustomID
+			username = c.CustomId
 		}
-		apisixConsumer := apisix.Consumer{
+		apisixConsumer := &apisix.Consumer{
 			Username: username,
 		}
 
@@ -25,8 +25,8 @@ func MigrateConsumer(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisi
 
 			apisixConsumer.Plugins = apisix.Plugins{"key-auth": pluginConfig}
 		}
-		apisixConsumers = append(apisixConsumers, apisixConsumer)
+		apisixConsumers = append(apisixConsumers, *apisixConsumer)
 	}
 
-	return apisixConsumers, nil
+	return &apisixConsumers, nil
 }

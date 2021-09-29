@@ -9,7 +9,7 @@ import (
 	"github.com/api7/kong-to-apisix/pkg/utils"
 )
 
-func Migrate(kongConfig *Config) (*apisix.Config, *[]utils.YamlItem, error) {
+func Migrate(kongConfig *KongConfig) (*apisix.Config, *[]utils.YamlItem, error) {
 	apisixConfig := &apisix.Config{}
 	var configYamlAll []utils.YamlItem
 
@@ -39,12 +39,12 @@ func Migrate(kongConfig *Config) (*apisix.Config, *[]utils.YamlItem, error) {
 	return apisixConfig, &configYamlAll, nil
 }
 
-func ReadYaml(yamlPath string) (*Config, error) {
+func ReadYaml(yamlPath string) (*KongConfig, error) {
 	yamlFile, err := ioutil.ReadFile(yamlPath)
 	if err != nil {
 		return nil, err
 	}
-	var kongConfig *Config
+	var kongConfig *KongConfig
 	err = yaml.Unmarshal(yamlFile, &kongConfig)
 	if err != nil {
 		return nil, err
