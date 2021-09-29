@@ -8,9 +8,9 @@ import (
 
 // TODO: need to take care of plugin precedence
 // https://docs.konghq.com/gateway-oss/2.4.x/admin-api/#precedence
-func MigrateGlobalRules(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.GlobalRules, error) {
+func MigrateGlobalRules(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*[]apisix.GlobalRule, error) {
 	kongGlobalPlugins := kongConfig.Plugins
-	var apisixGlobalRules apisix.GlobalRules
+	var apisixGlobalRules []apisix.GlobalRule
 
 	for _, p := range kongGlobalPlugins {
 		//fmt.Printf("got plugin: %#v\n", p)
@@ -32,5 +32,5 @@ func MigrateGlobalRules(kongConfig *Config, configYamlAll *[]utils.YamlItem) (ap
 			fmt.Printf("Plugin %s not supported by apisix yet\n", p.Name)
 		}
 	}
-	return apisixGlobalRules, nil
+	return &apisixGlobalRules, nil
 }

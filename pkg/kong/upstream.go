@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func MigrateUpstream(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.Upstreams, error) {
+func MigrateUpstream(kongConfig *KongConfig, configYamlAll *[]utils.YamlItem) (*[]apisix.Upstream, error) {
 	kongUpstreams := kongConfig.Upstreams
 	kongServices := kongConfig.Services
 	upstreamsMap := make(map[string]Upstream)
@@ -19,7 +19,7 @@ func MigrateUpstream(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisi
 		upstreamsMap[u.Name] = u
 	}
 
-	var apisixUpstreams apisix.Upstreams
+	var apisixUpstreams []apisix.Upstream
 	for i, s := range kongServices {
 		kongConfig.Services[i].ID = strconv.Itoa(i)
 		// TODO: gokong not support lbAlgorithm yet
@@ -91,5 +91,5 @@ func MigrateUpstream(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisi
 		apisixUpstreams = append(apisixUpstreams, *apisixUpstream)
 	}
 
-	return apisixUpstreams, nil
+	return &apisixUpstreams, nil
 }

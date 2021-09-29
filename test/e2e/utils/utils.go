@@ -63,7 +63,7 @@ func TestMigrate() error {
 	if err != nil {
 		return err
 	}
-	var kongConfig *kong.Config
+	var kongConfig *kong.KongConfig
 	err = yaml.Unmarshal(kongConfigBytes, &kongConfig)
 	if err != nil {
 		return err
