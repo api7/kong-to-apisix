@@ -44,12 +44,7 @@ func GenerateApisixServiceUpstream(kongService Service, apisixConfig *apisix.Con
 	if kongService.Port > 0 {
 		apisixUpstreamNode.Port = kongService.Port
 	} else {
-		switch kongService.Protocol {
-		case "https":
-			apisixUpstreamNode.Port = 443
-		default:
-			apisixUpstreamNode.Port = 80
-		}
+		apisixUpstreamNode.Port = 80
 	}
 	apisixUpstream.Nodes = append(apisixUpstream.Nodes, apisixUpstreamNode)
 	// apisix upstream timeout
