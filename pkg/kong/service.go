@@ -3,6 +3,7 @@ package kong
 import (
 	"errors"
 	"fmt"
+
 	"github.com/api7/kong-to-apisix/pkg/apisix"
 	uuid "github.com/satori/go.uuid"
 )
@@ -21,6 +22,7 @@ func MigrateService(kongConfig *Config, apisixConfig *apisix.Config) error {
 	}
 
 	apisixConfig.Services = apisixServices
+	fmt.Println("Kong to APISIX service configuration conversion completed")
 	return nil
 }
 
@@ -32,17 +34,22 @@ func GenerateApisixServiceUpstream(kongService Service, apisixConfig *apisix.Con
 	var apisixUpstreamNode apisix.UpstreamNode
 	apisixUpstreamNode.Weight = 100
 	apisixUpstreamNode.Host = kongService.Host
-	if kongService.Port == 0 {
-		apisixUpstreamNode.Port = 80
-	} else {
+	if kongService.Port > 0 {
 		apisixUpstreamNode.Port = kongService.Port
+	} else {
+		switch kongService.Protocol {
+		case "https":
+			apisixUpstreamNode.Port = 443
+		default:
+			apisixUpstreamNode.Port = 80
+		}
 	}
 	apisixUpstream.Nodes = append(apisixUpstream.Nodes, apisixUpstreamNode)
 	// apisix upstream timeout
 	var apisixUpstreamTimeout apisix.UpstreamTimeout
-	apisixUpstreamTimeout.Send = kongService.WriteTimeout
-	apisixUpstreamTimeout.Read = kongService.ReadTimeout
-	apisixUpstreamTimeout.Connect = kongService.ConnectTimeout
+	apisixUpstreamTimeout.Send = kongService.WriteTimeout / 1000
+	apisixUpstreamTimeout.Read = kongService.ReadTimeout / 1000
+	apisixUpstreamTimeout.Connect = kongService.ConnectTimeout / 1000
 	apisixUpstream.Timeout = apisixUpstreamTimeout
 	// apisix upstream scheme
 	apisixUpstream.Scheme = kongService.Protocol
