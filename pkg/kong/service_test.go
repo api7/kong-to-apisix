@@ -29,7 +29,7 @@ func TestMigrateService(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, apisixConfig.Services[0].ID, kongConfigService.ID)
 	assert.Equal(t, apisixConfig.Services[0].Name, kongConfigService.Name)
-	assert.Equal(t, len(apisixConfig.Services[0].UpstreamID), len(uuid.NewV4().String()))
+	assert.Equal(t, apisixConfig.Services[0].UpstreamID, "svc-"+kongConfigService.ID+"-ups")
 	assert.Equal(t, apisixConfig.Upstreams[0].Nodes[0].Host, kongConfigService.Host)
 	assert.Equal(t, apisixConfig.Upstreams[0].Nodes[0].Port, kongConfigService.Port)
 	assert.Equal(t, apisixConfig.Upstreams[0].Nodes[0].Weight, 100)
@@ -43,6 +43,7 @@ func TestMigrateService(t *testing.T) {
 func TestGenerateApisixServiceUpstream(t *testing.T) {
 	var apisixConfig apisix.Config
 	var kongConfigService Service
+	kongConfigService.ID = uuid.NewV4().String()
 	kongConfigService.Host = "example.com"
 	kongConfigService.Port = 80
 	kongConfigService.Protocol = "http"

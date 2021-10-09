@@ -3,9 +3,11 @@ package kong
 import (
 	"errors"
 	"fmt"
+	"os"
+
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/api7/kong-to-apisix/pkg/apisix"
-	uuid "github.com/satori/go.uuid"
 )
 
 func MigrateService(kongConfig *Config, apisixConfig *apisix.Config) error {
@@ -19,17 +21,22 @@ func MigrateService(kongConfig *Config, apisixConfig *apisix.Config) error {
 		upstreamID := GenerateApisixServiceUpstream(kongService, apisixConfig)
 		apisixService.UpstreamID = upstreamID
 		apisixServices = append(apisixServices, apisixService)
+		fmt.Fprintf(os.Stdout, "Kong service [ %s ] to APISIX conversion completed\n", kongService.ID)
 	}
 
 	apisixConfig.Services = apisixServices
-	fmt.Println("Kong to APISIX service configuration conversion completed")
+	fmt.Println("Kong to APISIX services configuration conversion completed")
 	return nil
 }
 
 func GenerateApisixServiceUpstream(kongService Service, apisixConfig *apisix.Config) string {
 	var apisixUpstream apisix.Upstream
 	// apisix upstream id
-	apisixUpstream.ID = uuid.NewV4().String()
+	if len(kongService.ID) > 0 {
+		apisixUpstream.ID = "svc-" + kongService.ID + "-ups"
+	} else {
+		apisixUpstream.ID = uuid.NewV4().String()
+	}
 	// apisix upstream nodes
 	var apisixUpstreamNode apisix.UpstreamNode
 	apisixUpstreamNode.Weight = 100
