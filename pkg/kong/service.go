@@ -54,9 +54,9 @@ func GenerateApisixServiceUpstream(kongService Service, apisixConfig *apisix.Con
 	apisixUpstream.Nodes = append(apisixUpstream.Nodes, apisixUpstreamNode)
 	// apisix upstream timeout
 	var apisixUpstreamTimeout apisix.UpstreamTimeout
-	apisixUpstreamTimeout.Send = kongService.WriteTimeout / 1000
-	apisixUpstreamTimeout.Read = kongService.ReadTimeout / 1000
-	apisixUpstreamTimeout.Connect = kongService.ConnectTimeout / 1000
+	apisixUpstreamTimeout.Send = float32(kongService.WriteTimeout) / float32(1000)
+	apisixUpstreamTimeout.Read = float32(kongService.ReadTimeout) / float32(1000)
+	apisixUpstreamTimeout.Connect = float32(kongService.ConnectTimeout) / float32(1000)
 	apisixUpstream.Timeout = apisixUpstreamTimeout
 	// apisix upstream scheme
 	apisixUpstream.Scheme = kongService.Protocol

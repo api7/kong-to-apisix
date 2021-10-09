@@ -21,9 +21,9 @@ func TestMigrateService(t *testing.T) {
 	kongConfigService.Port = 80
 	kongConfigService.Protocol = "http"
 	kongConfigService.Retries = 5
-	kongConfigService.ConnectTimeout = 60000
-	kongConfigService.ReadTimeout = 60000
-	kongConfigService.WriteTimeout = 60000
+	kongConfigService.ConnectTimeout = 1500
+	kongConfigService.ReadTimeout = 150
+	kongConfigService.WriteTimeout = 15
 	kongConfig.Services = append(kongConfig.Services, kongConfigService)
 	err := MigrateService(&kongConfig, &apisixConfig)
 	assert.NoError(t, err)
@@ -33,9 +33,9 @@ func TestMigrateService(t *testing.T) {
 	assert.Equal(t, apisixConfig.Upstreams[0].Nodes[0].Host, kongConfigService.Host)
 	assert.Equal(t, apisixConfig.Upstreams[0].Nodes[0].Port, kongConfigService.Port)
 	assert.Equal(t, apisixConfig.Upstreams[0].Nodes[0].Weight, 100)
-	assert.Equal(t, apisixConfig.Upstreams[0].Timeout.Connect, kongConfigService.ConnectTimeout/1000)
-	assert.Equal(t, apisixConfig.Upstreams[0].Timeout.Read, kongConfigService.ReadTimeout/1000)
-	assert.Equal(t, apisixConfig.Upstreams[0].Timeout.Send, kongConfigService.WriteTimeout/1000)
+	assert.Equal(t, apisixConfig.Upstreams[0].Timeout.Connect, float32(1.5))
+	assert.Equal(t, apisixConfig.Upstreams[0].Timeout.Read, float32(0.15))
+	assert.Equal(t, apisixConfig.Upstreams[0].Timeout.Send, float32(0.015))
 	assert.Equal(t, apisixConfig.Upstreams[0].Scheme, kongConfigService.Protocol)
 	assert.Equal(t, apisixConfig.Upstreams[0].Retries, kongConfigService.Retries)
 }
@@ -56,9 +56,9 @@ func TestGenerateApisixServiceUpstream(t *testing.T) {
 	assert.Equal(t, apisixConfig.Upstreams[0].Nodes[0].Host, kongConfigService.Host)
 	assert.Equal(t, apisixConfig.Upstreams[0].Nodes[0].Port, kongConfigService.Port)
 	assert.Equal(t, apisixConfig.Upstreams[0].Nodes[0].Weight, 100)
-	assert.Equal(t, apisixConfig.Upstreams[0].Timeout.Connect, kongConfigService.ConnectTimeout/1000)
-	assert.Equal(t, apisixConfig.Upstreams[0].Timeout.Read, kongConfigService.ReadTimeout/1000)
-	assert.Equal(t, apisixConfig.Upstreams[0].Timeout.Send, kongConfigService.WriteTimeout/1000)
+	assert.Equal(t, apisixConfig.Upstreams[0].Timeout.Connect, float32(60))
+	assert.Equal(t, apisixConfig.Upstreams[0].Timeout.Read, float32(60))
+	assert.Equal(t, apisixConfig.Upstreams[0].Timeout.Send, float32(60))
 	assert.Equal(t, apisixConfig.Upstreams[0].Scheme, kongConfigService.Protocol)
 	assert.Equal(t, apisixConfig.Upstreams[0].Retries, kongConfigService.Retries)
 }

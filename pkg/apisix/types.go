@@ -92,9 +92,9 @@ type Upstreams []Upstream
 
 // UpstreamTimeout is the apisix upstream.timeout definition.
 type UpstreamTimeout struct {
-	Connect uint `json:"connect,omitempty" yaml:"connect,omitempty"`
-	Send    uint `json:"send,omitempty" yaml:"send,omitempty"`
-	Read    uint `json:"read,omitempty" yaml:"read,omitempty"`
+	Connect float32 `json:"connect,omitempty" yaml:"connect,omitempty"`
+	Send    float32 `json:"send,omitempty" yaml:"send,omitempty"`
+	Read    float32 `json:"read,omitempty" yaml:"read,omitempty"`
 }
 
 // UpstreamNode is the apisix upstream[index].node definition.

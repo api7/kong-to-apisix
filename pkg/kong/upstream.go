@@ -2,10 +2,11 @@ package kong
 
 import (
 	"fmt"
-	"github.com/api7/kong-to-apisix/pkg/apisix"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/api7/kong-to-apisix/pkg/apisix"
 
 	"github.com/api7/kong-to-apisix/pkg/utils"
 	"github.com/pkg/errors"
@@ -29,9 +30,9 @@ func MigrateUpstream(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisi
 			Scheme:  s.Protocol,
 			Retries: uint(s.Retries),
 			Timeout: apisix.UpstreamTimeout{
-				Connect: uint(s.ConnectTimeout) / 1000,
-				Send:    uint(s.WriteTimeout) / 1000,
-				Read:    uint(s.ReadTimeout) / 1000,
+				Connect: float32(s.ConnectTimeout) / float32(1000),
+				Send:    float32(s.WriteTimeout) / float32(1000),
+				Read:    float32(s.ReadTimeout) / float32(1000),
 			},
 		}
 
