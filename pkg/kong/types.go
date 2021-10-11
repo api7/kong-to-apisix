@@ -5,6 +5,7 @@ type Config struct {
 	Consumers Consumers `json:"consumers,omitempty" yaml:"consumers,omitempty"`
 	Plugins   Plugins   `json:"plugins,omitempty" yaml:"plugins,omitempty"`
 	Upstreams Upstreams `json:"upstreams,omitempty" yaml:"upstreams,omitempty"`
+	Routes    Routes    `json:"routes,omitempty" yaml:"routes,omitempty"`
 }
 
 // Common Configuration
@@ -24,14 +25,14 @@ type Configuration map[string]interface{}
 type Service struct {
 	ID                string      `json:"id,omitempty" yaml:"id,omitempty"`
 	Name              string      `json:"name,omitempty" yaml:"name,omitempty"`
-	Retries           int         `json:"retries,omitempty" yaml:"retries,omitempty"`
+	Retries           uint        `json:"retries,omitempty" yaml:"retries,omitempty"`
 	Protocol          string      `json:"protocol,omitempty" yaml:"protocol,omitempty"`
 	Host              string      `json:"host,omitempty" yaml:"host,omitempty"`
 	Path              string      `json:"path,omitempty" yaml:"path,omitempty"`
 	Port              int         `json:"port,omitempty" yaml:"port,omitempty"`
-	ConnectTimeout    int         `json:"connect_timeout,omitempty" yaml:"connect_timeout,omitempty"`
-	ReadTimeout       int         `json:"read_timeout,omitempty" yaml:"read_timeout,omitempty"`
-	WriteTimeout      int         `json:"write_timeout,omitempty" yaml:"write_timeout,omitempty"`
+	ConnectTimeout    uint        `json:"connect_timeout,omitempty" yaml:"connect_timeout,omitempty"`
+	ReadTimeout       uint        `json:"read_timeout,omitempty" yaml:"read_timeout,omitempty"`
+	WriteTimeout      uint        `json:"write_timeout,omitempty" yaml:"write_timeout,omitempty"`
 	Tags              []string    `json:"tags,omitempty" yaml:"tags,omitempty"`
 	ClientCertificate Certificate `json:"client_certificate,omitempty" yaml:"client_certificate,omitempty"`
 	TLSVerify         bool        `json:"tls_verify,omitempty" yaml:"tls_verify,omitempty"`
@@ -56,7 +57,7 @@ type Route struct {
 	Paths                   []string            `json:"paths,omitempty" yaml:"paths,omitempty"`
 	Headers                 map[string][]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 	HTTPSRedirectStatusCode int                 `json:"https_redirect_status_code,omitempty" yaml:"https_redirect_status_code,omitempty"`
-	RegexPriority           int                 `json:"regex_priority,omitempty" yaml:"regex_priority,omitempty"`
+	RegexPriority           uint                `json:"regex_priority,omitempty" yaml:"regex_priority,omitempty"`
 	StripPath               bool                `json:"strip_path,omitempty" yaml:"strip_path,omitempty"`
 	PathHandling            string              `json:"path_handling,omitempty" yaml:"path_handling,omitempty"`
 	PreserveHost            bool                `json:"preserve_host,omitempty" yaml:"preserve_host,omitempty"`
@@ -66,7 +67,7 @@ type Route struct {
 	Sources                 []CIDRPort          `json:"sources,omitempty" yaml:"sources,omitempty"`
 	Destinations            []CIDRPort          `json:"destinations,omitempty" yaml:"destinations,omitempty"`
 	Tags                    []string            `json:"tags,omitempty" yaml:"tags,omitempty"`
-	Service                 Service             `json:"service,omitempty" yaml:"service,omitempty"`
+	Service                 string              `json:"service,omitempty" yaml:"service,omitempty"`
 	// TODO: Waiting to be deleted
 	Plugins Plugins `json:"plugins,omitempty" yaml:"plugins,omitempty"`
 }
