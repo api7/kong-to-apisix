@@ -3,10 +3,10 @@ name: Code Lint
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   golang-lint:
@@ -32,6 +32,18 @@ jobs:
           diffs=`gofmt -l .`
           if [[ -n $diffs ]]; then
               echo "Files are not formatted by gofmt:"
+              echo $diffs
+              exit 1
+          fi
+
+      - name: Run goimports
+        working-directory: ./
+        run: |
+          go get golang.org/x/tools/cmd/goimports
+          export PATH=$PATH:$(go env GOPATH)/bin/
+          diffs=`goimports -d .`
+          if [[ -n $diffs ]]; then
+              echo "Files are not formatted by goimport:"
               echo $diffs
               exit 1
           fi
