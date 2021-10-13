@@ -2,6 +2,7 @@ package kong
 
 import (
 	"fmt"
+
 	"github.com/api7/kong-to-apisix/pkg/apisix"
 	"github.com/api7/kong-to-apisix/pkg/utils"
 )
@@ -23,8 +24,8 @@ func MigrateGlobalRules(kongConfig *Config, configYamlAll *[]utils.YamlItem) (ap
 						Plugins: apisix.Plugins(apisixPlugin),
 					}
 					apisixGlobalRules = append(apisixGlobalRules, apisixGlobalRule)
-					for _, c := range configYaml {
-						*configYamlAll = append(*configYamlAll, c)
+					for configIndex := range configYaml {
+						*configYamlAll = append(*configYamlAll, configYaml[configIndex])
 					}
 				}
 			}

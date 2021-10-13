@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/api7/kong-to-apisix/pkg/apisix"
-
 	"github.com/api7/kong-to-apisix/pkg/utils"
+
 	"github.com/pkg/errors"
 )
 
