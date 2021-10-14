@@ -2,99 +2,79 @@ package kong
 
 import (
 	"fmt"
+	"os"
 	"strconv"
+	"strings"
 
 	"github.com/api7/kong-to-apisix/pkg/apisix"
-	"github.com/api7/kong-to-apisix/pkg/utils"
 )
 
-func MigrateRoute(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.Routes, error) {
+func MigrateRoute(kongConfig *Config, apisixConfig *apisix.Config) error {
 	kongServices := kongConfig.Services
+	kongRoutes := kongConfig.Routes
+	apisixRoutes := apisixConfig.Routes
 
-	var apisixRoutes apisix.Routes
-	i := 0
-	for _, s := range kongServices {
-		for _, r := range s.Routes {
-			i++
-			apisixRoute := &apisix.Route{
-				ID:         strconv.Itoa(i),
-				UpstreamID: s.ID,
-				// TODO: need to check if it's the same
-				Priority: uint(r.RegexPriority),
-				Plugins:  apisix.Plugins{},
+	for _, kongRoute := range kongRoutes {
+		var err error
+		var kongService *Service
+		if len(kongRoute.Service) > 0 {
+			kongService, err = GetKongServiceByID(&kongServices, kongRoute.Service)
+			if err != nil {
+				fmt.Printf("Migrate Route ID: %s, err: %s", kongRoute.ID, err.Error())
+				continue
 			}
+		}
 
-			if r.Name != "" {
-				apisixRoute.Name = r.Name
-			}
-
-			// TODO: need to tweak between different rules of apisix and kong later
-			if len(r.Paths) == 1 {
-				apisixRoute.URI = r.Paths[0] + "*"
-			} else {
-				var uris []string
-				for _, p := range r.Paths {
-					uris = append(uris, p+"*")
-				}
-				apisixRoute.URIs = uris
-			}
-
-			if len(r.Hosts) == 1 {
-				apisixRoute.Host = r.Hosts[0]
-			} else {
-				var hosts []string
-				for hostIndex := range r.Hosts {
-					hosts = append(hosts, r.Hosts[hostIndex])
-				}
-				apisixRoute.Hosts = hosts
-			}
-
-			// since proxy-rewrite could only support one line for regex-uri
-			// need to split it to several routes if match uris
-			if r.StripPath && apisixRoute.URI != "" {
-				err := addProxyRewrite(apisixRoute)
-				if err != nil {
-					return nil, err
-				}
-			}
-
-			var methods []string
-			for methodIndex := range r.Methods {
-				methods = append(methods, r.Methods[methodIndex])
-			}
-			apisixRoute.Methods = methods
-
-			plugins := apisixRoute.Plugins
-			for _, p := range r.Plugins {
-				if f, ok := pluginMap[p.Name]; ok {
-					if p.Enabled {
-						if apisixPlugin, configYaml, err := f(p); err != nil {
-							return nil, err
-						} else {
-							for k, v := range apisixPlugin {
-								plugins[k] = v
-							}
-							for configIndex := range configYaml {
-								*configYamlAll = append(*configYamlAll, configYaml[configIndex])
-							}
-						}
-					}
-				}
-			}
-			apisixRoute.Plugins = plugins
-
-			apisixRoutes = append(apisixRoutes, *apisixRoute)
+		var apisixRoute apisix.Route
+		// Kong and apisix plugin structure and routing rules are different, so split routing
+		for index, path := range kongRoute.Paths {
+			apisixRoute.ID = kongRoute.ID + "-" + strconv.Itoa(index)
+			apisixRoute.Name = kongRoute.Name + "-" + strconv.Itoa(index)
+			apisixRoute.URI = path + "*"
+			apisixRoute.Hosts = kongRoute.Hosts
+			apisixRoute.Methods = kongRoute.Methods
+			apisixRoute.Priority = kongRoute.RegexPriority
+			apisixRoute.ServiceID = kongRoute.Service
+			proxyRewrite := GenerateProxyRewritePluginConfig(kongService.Path, path,
+				kongRoute.StripPath, kongRoute.PathHandling)
+			// mapping kong to apisix upstream request URI
+			apisixRoute.Plugins = make(apisix.Plugins)
+			apisixRoute.Plugins["proxy-rewrite"] = proxyRewrite
+			apisixRoutes = append(apisixRoutes, apisixRoute)
+			fmt.Fprintf(os.Stdout, "Kong route [ %s ] to APISIX conversion completed\n", kongRoute.ID)
 		}
 	}
-
-	return apisixRoutes, nil
+	apisixConfig.Routes = apisixRoutes
+	fmt.Println("Kong to APISIX routes configuration conversion completed")
+	return nil
 }
 
-func addProxyRewrite(route *apisix.Route) error {
-	pluginConfig := make(map[string]interface{})
-	pluginConfig["regex_uri"] = []string{fmt.Sprintf(`^%s/?(.*)`, route.URI[:len(route.URI)-1]), "/$1"}
+// GenerateProxyRewritePluginConfig Generate routing and forwarding rules
+// https://docs.konghq.com/gateway-oss/2.4.x/admin-api/#path-handling-algorithms
+func GenerateProxyRewritePluginConfig(servicePath string, routerPath string, stripPath bool,
+	pathHandling string) map[string]interface{} {
+	if len(servicePath) == 0 {
+		servicePath = "/"
+	}
 
-	route.Plugins["proxy-rewrite"] = pluginConfig
+	var pathRegex string
+	if stripPath {
+		pathRegex = fmt.Sprintf(`^%s/?(.*)`, routerPath)
+	} else {
+		pathRegex = `^/?(.*)`
+	}
+	pathRegex = strings.Replace(pathRegex, "//", "/", -1)
 
-	return nil
+	var pathPattern string
+	if pathHandling == "v1" {
+		pathPattern = fmt.Sprintf(`%s$1`, servicePath)
+	} else { // pathHandling == "v0"
+		pathPattern = fmt.Sprintf(`%s/$1`, servicePath)
+	}
+	pathPattern = strings.Replace(pathPattern, "//", "/", -1)
+
+	config := make(map[string]interface{})
+	config["regex_uri"] = []string{pathRegex, pathPattern}
+
+	return config
 }

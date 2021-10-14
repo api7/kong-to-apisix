@@ -42,3 +42,7 @@ func DumpKong(kongAddr string, fileName string) error {
 		WithID:     false,
 	})
 }
+
+func KTATimeoutConversion(kongTime uint) float32 {
+	return float32(kongTime) / float32(1000)
+}

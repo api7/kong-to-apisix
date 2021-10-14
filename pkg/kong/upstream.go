@@ -7,12 +7,10 @@ import (
 	"strings"
 
 	"github.com/api7/kong-to-apisix/pkg/apisix"
-	"github.com/api7/kong-to-apisix/pkg/utils"
-
 	"github.com/pkg/errors"
 )
 
-func MigrateUpstream(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.Upstreams, error) {
+func MigrateUpstream(kongConfig *Config, apisixConfig *apisix.Config) error {
 	kongUpstreams := kongConfig.Upstreams
 	kongServices := kongConfig.Services
 	upstreamsMap := make(map[string]Upstream)
@@ -20,7 +18,8 @@ func MigrateUpstream(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisi
 		upstreamsMap[u.Name] = u
 	}
 
-	var apisixUpstreams apisix.Upstreams
+	// TODO: Temporarily compatible, this module will be refactored
+	apisixUpstreams := apisixConfig.Upstreams
 	for i, s := range kongServices {
 		kongConfig.Services[i].ID = strconv.Itoa(i)
 		// TODO: gokong not support lbAlgorithm yet
@@ -30,9 +29,9 @@ func MigrateUpstream(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisi
 			Scheme:  s.Protocol,
 			Retries: uint(s.Retries),
 			Timeout: apisix.UpstreamTimeout{
-				Connect: float32(s.ConnectTimeout) / float32(1000),
-				Send:    float32(s.WriteTimeout) / float32(1000),
-				Read:    float32(s.ReadTimeout) / float32(1000),
+				Connect: KTATimeoutConversion(s.ConnectTimeout),
+				Send:    KTATimeoutConversion(s.WriteTimeout),
+				Read:    KTATimeoutConversion(s.ReadTimeout),
 			},
 		}
 
@@ -60,19 +59,19 @@ func MigrateUpstream(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisi
 			for _, t := range targets {
 				u, err := url.Parse(t.Target)
 				if err != nil && !strings.Contains(err.Error(), "first path segment in URL cannot contain colon") {
-					return nil, errors.Wrap(err, "url parse")
+					return errors.Wrap(err, "url parse")
 				}
 
 				if u == nil || u.Host == "" {
 					u, err = url.ParseRequestURI("http://" + t.Target)
 					if err != nil {
-						return nil, err
+						return err
 					}
 				}
 
 				port, err := strconv.Atoi(u.Port())
 				if err != nil {
-					return nil, err
+					return err
 				}
 				upstreamNodes = append(upstreamNodes, apisix.UpstreamNode{
 					Host:   u.Hostname(),
@@ -92,5 +91,7 @@ func MigrateUpstream(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisi
 		apisixUpstreams = append(apisixUpstreams, *apisixUpstream)
 	}
 
-	return apisixUpstreams, nil
+	apisixConfig.Upstreams = apisixUpstreams
+
+	return nil
 }
