@@ -85,7 +85,7 @@ func TestMigrateRoute(t *testing.T) {
 }
 
 func TestGenerateProxyRewritePluginConfig(t *testing.T) {
-	config := make(map[string]interface{})
+	var config map[string]interface{}
 	//https://docs.konghq.com/gateway-oss/2.4.x/admin-api/#path-handling-algorithms
 	config = GenerateProxyRewritePluginConfig("/s", "/fv0", false, "v0")
 	assert.Equal(t, config["regex_uri"].([]string)[0], "^/?(.*)")
