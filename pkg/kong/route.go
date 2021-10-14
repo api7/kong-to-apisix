@@ -2,9 +2,9 @@ package kong
 
 import (
 	"fmt"
-	"github.com/api7/kong-to-apisix/pkg/apisix"
 	"strconv"
 
+	"github.com/api7/kong-to-apisix/pkg/apisix"
 	"github.com/api7/kong-to-apisix/pkg/utils"
 )
 
@@ -43,8 +43,8 @@ func MigrateRoute(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.R
 				apisixRoute.Host = r.Hosts[0]
 			} else {
 				var hosts []string
-				for _, h := range r.Hosts {
-					hosts = append(hosts, h)
+				for hostIndex := range r.Hosts {
+					hosts = append(hosts, r.Hosts[hostIndex])
 				}
 				apisixRoute.Hosts = hosts
 			}
@@ -59,8 +59,8 @@ func MigrateRoute(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.R
 			}
 
 			var methods []string
-			for _, m := range r.Methods {
-				methods = append(methods, m)
+			for methodIndex := range r.Methods {
+				methods = append(methods, r.Methods[methodIndex])
 			}
 			apisixRoute.Methods = methods
 
@@ -74,8 +74,8 @@ func MigrateRoute(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.R
 							for k, v := range apisixPlugin {
 								plugins[k] = v
 							}
-							for _, c := range configYaml {
-								*configYamlAll = append(*configYamlAll, c)
+							for configIndex := range configYaml {
+								*configYamlAll = append(*configYamlAll, configYaml[configIndex])
 							}
 						}
 					}

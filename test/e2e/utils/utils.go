@@ -8,14 +8,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/api7/kong-to-apisix/pkg/apisix"
+	"github.com/api7/kong-to-apisix/pkg/kong"
+	"github.com/api7/kong-to-apisix/pkg/utils"
+
 	"github.com/globocom/gokong"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
-
-	"github.com/api7/kong-to-apisix/pkg/apisix"
-	"github.com/api7/kong-to-apisix/pkg/kong"
-	"github.com/api7/kong-to-apisix/pkg/utils"
 )
 
 var (

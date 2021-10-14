@@ -3,11 +3,11 @@ package e2e
 import (
 	"strings"
 
+	"github.com/api7/kong-to-apisix/test/e2e/utils"
+
 	"github.com/globocom/gokong"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
-
-	"github.com/api7/kong-to-apisix/test/e2e/utils"
 )
 
 var _ = ginkgo.Describe("upstream", func() {

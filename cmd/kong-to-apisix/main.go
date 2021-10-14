@@ -19,12 +19,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-
 	"github.com/api7/kong-to-apisix/pkg/apisix"
 	"github.com/api7/kong-to-apisix/pkg/kong"
 	"github.com/api7/kong-to-apisix/pkg/utils"
+
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 )
 
 func newMigrateCommand() *cobra.Command {

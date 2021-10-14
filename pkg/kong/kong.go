@@ -3,10 +3,10 @@ package kong
 import (
 	"io/ioutil"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/api7/kong-to-apisix/pkg/apisix"
 	"github.com/api7/kong-to-apisix/pkg/utils"
+
+	"gopkg.in/yaml.v2"
 )
 
 func Migrate(kongConfig *Config) (*apisix.Config, *[]utils.YamlItem, error) {

@@ -32,7 +32,10 @@ func AppendToConfigYaml(items *[]YamlItem, filePath string) error {
 		return err
 	}
 
-	ioutil.WriteFile(filePath, out, 0644)
+	err = ioutil.WriteFile(filePath, out, 0644)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

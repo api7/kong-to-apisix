@@ -3,13 +3,12 @@ package e2e
 import (
 	"testing"
 
-	"github.com/onsi/ginkgo"
-	"github.com/onsi/gomega"
-
 	"github.com/api7/kong-to-apisix/pkg/apisix"
 	"github.com/api7/kong-to-apisix/pkg/utils"
-
 	e2eutils "github.com/api7/kong-to-apisix/test/e2e/utils"
+
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
 )
 
 func TestMigrate(t *testing.T) {
