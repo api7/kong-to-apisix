@@ -39,8 +39,6 @@ type Service struct {
 	TLSVerifyDepth    int         `json:"tls_verify_depth,omitempty" yaml:"tls_verify_depth,omitempty"`
 	CACertificates    []string    `json:"ca_certificates,omitempty" yaml:"ca_certificates,omitempty"`
 	URL               string      `json:"url,omitempty" yaml:"url,omitempty"`
-	// TODO: Waiting to be deleted
-	Routes Routes `json:"routes,omitempty" yaml:"routes,omitempty"`
 }
 
 type Services []Service
