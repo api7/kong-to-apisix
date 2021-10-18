@@ -16,7 +16,12 @@ func MigrateService(kongConfig *Config, apisixConfig *apisix.Config) error {
 
 	for _, kongService := range kongServices {
 		var apisixService apisix.Service
-		apisixService.ID = kongService.ID
+		if len(kongService.ID) <= 0 {
+			// kong deck export id isempty
+			apisixService.ID = uuid.NewV4().String()
+		} else {
+			apisixService.ID = kongService.ID
+		}
 		apisixService.Name = kongService.Name
 		upstreamID := GenerateApisixServiceUpstream(kongService, apisixConfig)
 		apisixService.UpstreamID = upstreamID
@@ -37,6 +42,7 @@ func GenerateApisixServiceUpstream(kongService Service, apisixConfig *apisix.Con
 	} else {
 		apisixUpstream.ID = uuid.NewV4().String()
 	}
+	apisixUpstream.Type = "roundrobin"
 	// apisix upstream nodes
 	var apisixUpstreamNode apisix.UpstreamNode
 	apisixUpstreamNode.Weight = 100
@@ -63,18 +69,18 @@ func GenerateApisixServiceUpstream(kongService Service, apisixConfig *apisix.Con
 	return apisixUpstream.ID
 }
 
-func GetKongServiceByID(kongServices *Services, serviceID string) (*Service, error) {
+func GetKongServiceByID(kongServices *Services, kongServiceID string) (*Service, error) {
 	if kongServices == nil {
 		return nil, errors.New("kong services is nil or invalid")
 	}
 
-	if len(serviceID) <= 0 {
+	if len(kongServiceID) <= 0 {
 		return nil, errors.New("kong service id invalid")
 	}
 
 	var kongService *Service
 	for _, service := range *kongServices {
-		if service.ID == serviceID {
+		if service.ID == kongServiceID {
 			kongService = &service
 			break
 		}
@@ -84,5 +90,5 @@ func GetKongServiceByID(kongServices *Services, serviceID string) (*Service, err
 		return kongService, nil
 	}
 
-	return nil, fmt.Errorf("kong service id /%s/ not found", serviceID)
+	return nil, fmt.Errorf("kong service id /%s/ not found", kongServiceID)
 }

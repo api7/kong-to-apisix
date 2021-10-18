@@ -25,7 +25,7 @@ type Route struct {
 	FilterFunc      string            `json:"filter_func,omitempty" yaml:"filter_func,omitempty"`
 	Plugins         Plugins           `json:"plugins,omitempty" yaml:"plugins,omitempty"`
 	Script          string            `json:"script,omitempty" yaml:"script,omitempty"`
-	Upstream        Upstream          `json:"upstream,omitempty" yaml:"upstream,omitempty"`
+	Upstream        *Upstream         `json:"upstream,omitempty" yaml:"upstream,omitempty"`
 	UpstreamID      string            `json:"upstream_id,omitempty" yaml:"upstream_id,omitempty"`
 	ServiceID       string            `json:"service_id,omitempty" yaml:"service_id,omitempty"`
 	PluginConfigID  string            `json:"plugin_config_id,omitempty" yaml:"plugin_config_id,omitempty"`
@@ -46,7 +46,7 @@ type Service struct {
 	Labels          map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 	EnableWebsocket bool              `json:"enable_websocket,omitempty" yaml:"enable_websocket,omitempty"`
 	Hosts           []string          `json:"hosts,omitempty" yaml:"hosts,omitempty"`
-	Upstream        Upstream          `json:"upstreams,omitempty" yaml:"upstreams,omitempty"`
+	Upstream        *Upstream         `json:"upstreams,omitempty" yaml:"upstreams,omitempty"`
 	UpstreamID      string            `json:"upstream_id,omitempty" yaml:"upstream_id,omitempty"`
 	Plugins         Plugins           `json:"plugins,omitempty" yaml:"plugins,omitempty"`
 }
@@ -59,7 +59,15 @@ type Consumer struct {
 	Username string            `json:"username" yaml:"username"`
 	Desc     string            `json:"desc,omitempty" yaml:"desc,omitempty"`
 	Labels   map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
-	Plugins  Plugins           `json:"plugins,omitempty" yaml:"plugins,omitempty"`
+	Plugins  ConsumerPlugins   `json:"plugins,omitempty" yaml:"plugins,omitempty"`
+}
+
+type ConsumerPlugins struct {
+	KeyAuth KeyAuthCredential `json:"key-auth,omitempty" yaml:"key-auth,omitempty"`
+}
+
+type KeyAuthCredential struct {
+	Key string `json:"key,omitempty" yaml:"key,omitempty"`
 }
 
 type Consumers []Consumer
@@ -194,7 +202,23 @@ type SSLClient struct {
 
 // Plugins Configuration
 // Plugins is the apisix plugins definition
-type Plugins map[string]interface{}
+type Plugins struct {
+	KeyAuth      KeyAuth      `json:"key-auth,omitempty" yaml:"key-auth,omitempty"`
+	ProxyRewrite ProxyRewrite `json:"proxy-rewrite,omitempty" yaml:"proxy-rewrite,omitempty"`
+}
+
+type ProxyRewrite struct {
+	Scheme   string            `json:"scheme,omitempty" yaml:"scheme,omitempty"`
+	URI      string            `json:"uri,omitempty" yaml:"uri,omitempty"`
+	RegexURI []string          `json:"regex_uri,omitempty" yaml:"regex_uri,omitempty"`
+	Host     string            `json:"host,omitempty" yaml:"host,omitempty"`
+	Headers  map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
+}
+
+type KeyAuth struct {
+	Header string `json:"header,omitempty" yaml:"header,omitempty"`
+	Query  string `json:"query,omitempty" yaml:"query,omitempty"`
+}
 
 // GlobalRule Configuration
 // GlobalRule is the apisix global_rules definition.

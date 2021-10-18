@@ -19,11 +19,8 @@ func MigrateConsumer(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisi
 		}
 
 		// TODO: need to test then it got multiple key
-		if len(c.KeyAuthCredentials) > 0 && c.KeyAuthCredentials[0].Key != "" {
-			pluginConfig := make(map[string]interface{})
-			pluginConfig["key"] = c.KeyAuthCredentials[0].Key
-
-			apisixConsumer.Plugins = apisix.Plugins{"key-auth": pluginConfig}
+		if len(c.KeyAuthCredentials) > 0 && len(c.KeyAuthCredentials[0].Key) > 0 {
+			apisixConsumer.Plugins.KeyAuth.Key = c.KeyAuthCredentials[0].Key
 		}
 		apisixConsumers = append(apisixConsumers, apisixConsumer)
 	}

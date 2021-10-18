@@ -39,6 +39,7 @@ type Service struct {
 	TLSVerifyDepth    int         `json:"tls_verify_depth,omitempty" yaml:"tls_verify_depth,omitempty"`
 	CACertificates    []string    `json:"ca_certificates,omitempty" yaml:"ca_certificates,omitempty"`
 	URL               string      `json:"url,omitempty" yaml:"url,omitempty"`
+	Routes            Routes      `json:"routes,omitempty" yaml:"routes,omitempty"`
 }
 
 type Services []Service
@@ -66,24 +67,51 @@ type Route struct {
 	Destinations            []CIDRPort          `json:"destinations,omitempty" yaml:"destinations,omitempty"`
 	Tags                    []string            `json:"tags,omitempty" yaml:"tags,omitempty"`
 	Service                 string              `json:"service,omitempty" yaml:"service,omitempty"`
-	// TODO: Waiting to be deleted
-	Plugins Plugins `json:"plugins,omitempty" yaml:"plugins,omitempty"`
+	Plugins                 Plugins             `json:"plugins,omitempty" yaml:"plugins,omitempty"`
 }
 
 type Routes []Route
 
 // Consumer Configuration
 
+type KeyAuthCredential struct {
+	Key string `json:"key,omitempty" yaml:"key,omitempty"`
+}
+
+type KeyAuthCredentials []KeyAuthCredential
+
+type BasicAuthCredential struct {
+	Username string `json:"username,omitempty" yaml:"username,omitempty"`
+	Password string `json:"password,omitempty" yaml:"password,omitempty"`
+}
+
+type BasicAuthCredentials []BasicAuthCredential
+
+type HmacAuthCredential struct {
+	Username string `json:"username,omitempty" yaml:"username,omitempty"`
+	Secret   string `json:"secret,omitempty" yaml:"secret,omitempty"`
+}
+
+type HmacAuthCredentials []HmacAuthCredential
+
+type JwtSecret struct {
+	Algorithm string `json:"algorithm,omitempty" yaml:"algorithm,omitempty"`
+	Key       string `json:"key,omitempty" yaml:"key,omitempty"`
+	Secret    string `json:"secret,omitempty" yaml:"secret,omitempty"`
+}
+
+type JwtSecrets []JwtSecret
+
 // Consumer is the kong consumer definition.
 type Consumer struct {
-	ID       string   `json:"id,omitempty" yaml:"id,omitempty"`
-	CustomID string   `json:"custom_id,omitempty" yaml:"custom_id,omitempty"`
-	Username string   `json:"username,omitempty" yaml:"username,omitempty"`
-	Tags     []string `json:"tags,omitempty" yaml:"tags,omitempty"`
-	// TODO: Waiting to be deleted
-	KeyAuthCredentials []struct {
-		Key string `yaml:"key"`
-	} `yaml:"keyauth_credentials,omitempty"`
+	ID                   string               `json:"id,omitempty" yaml:"id,omitempty"`
+	CustomID             string               `json:"custom_id,omitempty" yaml:"custom_id,omitempty"`
+	Username             string               `json:"username,omitempty" yaml:"username,omitempty"`
+	Tags                 []string             `json:"tags,omitempty" yaml:"tags,omitempty"`
+	KeyAuthCredentials   KeyAuthCredentials   `json:"keyauth_credentials,omitempty" yaml:"keyauth_credentials,omitempty"`
+	BasicAuthCredentials BasicAuthCredentials `json:"basicauth_credentials,omitempty" yaml:"basicauth_credentials,omitempty"`
+	HmacAuthCredentials  HmacAuthCredentials  `json:"hmacauth_credentials,omitempty" yaml:"hmacauth_credentials,omitempty"`
+	JwtSecrets           JwtSecrets           `json:"jwt_secrets,omitempty" yaml:"jwt_secrets,omitempty"`
 }
 
 type Consumers []Consumer
@@ -150,8 +178,7 @@ type Upstream struct {
 	Tags               []string    `json:"tags,omitempty" yaml:"tags,omitempty"`
 	HostHeader         string      `json:"host_header,omitempty" yaml:"host_header,omitempty"`
 	ClientCertificate  Certificate `json:"client_certificate,omitempty" yaml:"client_certificate,omitempty"`
-	// TODO: Waiting to be deleted
-	Targets Targets `json:"targets,omitempty" yaml:"targets,omitempty"`
+	Targets            Targets     `json:"targets,omitempty" yaml:"targets,omitempty"`
 }
 
 type HealthCheck struct {
