@@ -25,7 +25,7 @@ type Route struct {
 	FilterFunc      string            `json:"filter_func,omitempty" yaml:"filter_func,omitempty"`
 	Plugins         Plugins           `json:"plugins,omitempty" yaml:"plugins,omitempty"`
 	Script          string            `json:"script,omitempty" yaml:"script,omitempty"`
-	Upstream        Upstream          `json:"upstream,omitempty" yaml:"upstream,omitempty"`
+	Upstream        *Upstream         `json:"upstream,omitempty" yaml:"upstream,omitempty"`
 	UpstreamID      string            `json:"upstream_id,omitempty" yaml:"upstream_id,omitempty"`
 	ServiceID       string            `json:"service_id,omitempty" yaml:"service_id,omitempty"`
 	PluginConfigID  string            `json:"plugin_config_id,omitempty" yaml:"plugin_config_id,omitempty"`
@@ -46,7 +46,7 @@ type Service struct {
 	Labels          map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 	EnableWebsocket bool              `json:"enable_websocket,omitempty" yaml:"enable_websocket,omitempty"`
 	Hosts           []string          `json:"hosts,omitempty" yaml:"hosts,omitempty"`
-	Upstream        Upstream          `json:"upstreams,omitempty" yaml:"upstreams,omitempty"`
+	Upstream        *Upstream         `json:"upstreams,omitempty" yaml:"upstreams,omitempty"`
 	UpstreamID      string            `json:"upstream_id,omitempty" yaml:"upstream_id,omitempty"`
 	Plugins         Plugins           `json:"plugins,omitempty" yaml:"plugins,omitempty"`
 }
@@ -59,7 +59,15 @@ type Consumer struct {
 	Username string            `json:"username" yaml:"username"`
 	Desc     string            `json:"desc,omitempty" yaml:"desc,omitempty"`
 	Labels   map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
-	Plugins  Plugins           `json:"plugins,omitempty" yaml:"plugins,omitempty"`
+	Plugins  ConsumerPlugins   `json:"plugins,omitempty" yaml:"plugins,omitempty"`
+}
+
+type ConsumerPlugins struct {
+	KeyAuth KeyAuthCredential `json:"key-auth,omitempty" yaml:"key-auth,omitempty"`
+}
+
+type KeyAuthCredential struct {
+	Key string `json:"key,omitempty" yaml:"key,omitempty"`
 }
 
 type Consumers []Consumer
@@ -194,7 +202,53 @@ type SSLClient struct {
 
 // Plugins Configuration
 // Plugins is the apisix plugins definition
-type Plugins map[string]interface{}
+type Plugins struct {
+	KeyAuth      *KeyAuth      `json:"key-auth,omitempty" yaml:"key-auth,omitempty"`
+	ProxyRewrite *ProxyRewrite `json:"proxy-rewrite,omitempty" yaml:"proxy-rewrite,omitempty"`
+	LimitCount   *LimitCount   `json:"limit-count,omitempty" yaml:"limit-count,omitempty"`
+	ProxyCache   *ProxyCache   `json:"proxy-cache,omitempty" yaml:"proxy-cache,omitempty"`
+}
+
+type ProxyRewrite struct {
+	Scheme   string            `json:"scheme,omitempty" yaml:"scheme,omitempty"`
+	URI      string            `json:"uri,omitempty" yaml:"uri,omitempty"`
+	RegexURI []string          `json:"regex_uri,omitempty" yaml:"regex_uri,omitempty"`
+	Host     string            `json:"host,omitempty" yaml:"host,omitempty"`
+	Headers  map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
+}
+
+type KeyAuth struct {
+	Header string `json:"header,omitempty" yaml:"header,omitempty"`
+	Query  string `json:"query,omitempty" yaml:"query,omitempty"`
+}
+
+type LimitCount struct {
+	Count                int      `json:"count,omitempty" yaml:"count,omitempty"`
+	TimeWindow           int      `json:"time_window,omitempty" yaml:"time_window,omitempty"`
+	Key                  string   `json:"key,omitempty" yaml:"key,omitempty"`
+	RejectedCode         int      `json:"rejected_code,omitempty" yaml:"rejected_code,omitempty"`
+	RejectedMsg          string   `json:"rejected_msg,omitempty" yaml:"rejected_msg,omitempty"`
+	Policy               string   `json:"policy,omitempty" yaml:"policy,omitempty"`
+	AllowDegradation     bool     `json:"allow_degradation,omitempty" yaml:"allow_degradation,omitempty"`
+	ShowLimitQuotaHeader bool     `json:"show_limit_quota_header,omitempty" yaml:"show_limit_quota_header,omitempty"`
+	RedisHost            string   `json:"redis_host,omitempty" yaml:"redis_host,omitempty"`
+	RedisPort            int      `json:"redis_port,omitempty" yaml:"redis_port,omitempty"`
+	RedisPassword        string   `json:"redis_password,omitempty" yaml:"redis_password,omitempty"`
+	RedisDatabase        int      `json:"redis_database,omitempty" yaml:"redis_database,omitempty"`
+	RedisTimeout         int      `json:"redis_timeout,omitempty" yaml:"redis_timeout,omitempty"`
+	RedisClusterNodes    []string `json:"redis_cluster_nodes,omitempty" yaml:"redis_cluster_nodes,omitempty"`
+	RedisClusterName     string   `json:"redis_cluster_name,omitempty" yaml:"redis_cluster_name,omitempty"`
+}
+
+type ProxyCache struct {
+	CacheZone        string   `json:"cache_zone,omitempty" yaml:"cache_zone,omitempty"`
+	CacheKey         []string `json:"cache_key,omitempty" yaml:"cache_key,omitempty"`
+	CacheBypass      []string `json:"cache_bypass,omitempty" yaml:"cache_bypass,omitempty"`
+	CacheMethod      []string `json:"cache_method,omitempty" yaml:"cache_method,omitempty"`
+	CacheHttpStatus  []int    `json:"cache_http_status,omitempty" yaml:"cache_http_status,omitempty"`
+	HideCacheHeaders bool     `json:"hide_cache_headers,omitempty" yaml:"hide_cache_headers,omitempty"`
+	NoCache          []string `json:"no_cache,omitempty" yaml:"no_cache,omitempty"`
+}
 
 // GlobalRule Configuration
 // GlobalRule is the apisix global_rules definition.

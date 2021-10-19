@@ -52,9 +52,9 @@ func MigrateRoute(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.R
 			// since proxy-rewrite could only support one line for regex-uri
 			// need to split it to several routes if match uris
 			if r.StripPath && apisixRoute.URI != "" {
-				err := addProxyRewrite(apisixRoute)
-				if err != nil {
-					return nil, err
+				proxyRewrite := addProxyRewrite(apisixRoute)
+				if proxyRewrite != nil {
+					apisixRoute.Plugins.ProxyRewrite = proxyRewrite
 				}
 			}
 
@@ -64,24 +64,21 @@ func MigrateRoute(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.R
 			}
 			apisixRoute.Methods = methods
 
-			plugins := apisixRoute.Plugins
 			for _, p := range r.Plugins {
-				if f, ok := pluginMap[p.Name]; ok {
-					if p.Enabled {
-						if apisixPlugin, configYaml, err := f(p); err != nil {
-							return nil, err
-						} else {
-							for k, v := range apisixPlugin {
-								plugins[k] = v
-							}
-							for configIndex := range configYaml {
-								*configYamlAll = append(*configYamlAll, configYaml[configIndex])
-							}
-						}
-					}
+				if !p.Enabled {
+					continue
+				}
+				switch p.Name {
+				case PluginKeyAuth:
+					apisixRoute.Plugins.KeyAuth = KTAConversionKongPluginKeyAuth(p)
+				case PluginProxyCache:
+					apisixRoute.Plugins.ProxyCache = KTAConversionKongPluginProxyCache(p)
+				case PluginRateLimiting:
+					apisixRoute.Plugins.LimitCount = KTAConversionKongPluginRateLimiting(p)
+				default:
+					fmt.Printf("Kong route [%s] plugin %s not supported by apisix yet\n", r.ID, p.Name)
 				}
 			}
-			apisixRoute.Plugins = plugins
 
 			apisixRoutes = append(apisixRoutes, *apisixRoute)
 		}
@@ -90,11 +87,8 @@ func MigrateRoute(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.R
 	return apisixRoutes, nil
 }
 
-func addProxyRewrite(route *apisix.Route) error {
-	pluginConfig := make(map[string]interface{})
-	pluginConfig["regex_uri"] = []string{fmt.Sprintf(`^%s/?(.*)`, route.URI[:len(route.URI)-1]), "/$1"}
-
-	route.Plugins["proxy-rewrite"] = pluginConfig
-
-	return nil
+func addProxyRewrite(route *apisix.Route) *apisix.ProxyRewrite {
+	var proxyRewrite apisix.ProxyRewrite
+	proxyRewrite.RegexURI = []string{fmt.Sprintf(`^%s/?(.*)`, route.URI[:len(route.URI)-1]), "/$1"}
+	return &proxyRewrite
 }

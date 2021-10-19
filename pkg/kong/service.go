@@ -3,11 +3,10 @@ package kong
 import (
 	"errors"
 	"fmt"
-	"os"
-
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/api7/kong-to-apisix/pkg/apisix"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 func MigrateService(kongConfig *Config, apisixConfig *apisix.Config) error {
@@ -15,13 +14,16 @@ func MigrateService(kongConfig *Config, apisixConfig *apisix.Config) error {
 	apisixServices := apisixConfig.Services
 
 	for _, kongService := range kongServices {
+		if len(kongService.ID) <= 0 {
+			kongService.ID = uuid.NewV4().String()
+		}
 		var apisixService apisix.Service
 		apisixService.ID = kongService.ID
 		apisixService.Name = kongService.Name
 		upstreamID := GenerateApisixServiceUpstream(kongService, apisixConfig)
 		apisixService.UpstreamID = upstreamID
 		apisixServices = append(apisixServices, apisixService)
-		fmt.Fprintf(os.Stdout, "Kong service [ %s ] to APISIX conversion completed\n", kongService.ID)
+		fmt.Printf("Kong service [ %s ] to APISIX conversion completed\n", kongService.ID)
 	}
 
 	apisixConfig.Services = apisixServices
@@ -37,6 +39,7 @@ func GenerateApisixServiceUpstream(kongService Service, apisixConfig *apisix.Con
 	} else {
 		apisixUpstream.ID = uuid.NewV4().String()
 	}
+	apisixUpstream.Type = "roundrobin"
 	// apisix upstream nodes
 	var apisixUpstreamNode apisix.UpstreamNode
 	apisixUpstreamNode.Weight = 100
