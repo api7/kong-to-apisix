@@ -1,27 +1,19 @@
 package kong
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
-<<<<<<< HEAD
 	"github.com/api7/kong-to-apisix/pkg/apisix"
 
 	uuid "github.com/satori/go.uuid"
-=======
-	uuid "github.com/satori/go.uuid"
-
-	apisix "github.com/api7/kong-to-apisix/pkg/apisix"
->>>>>>> 23abdb5 (feat: compatible with kong deck and kong config)
 )
 
 func MigrateRoute(kongConfig *Config, apisixConfig *apisix.Config) error {
 	kongServices := kongConfig.Services
 	kongRoutes := kongConfig.Routes
 
-<<<<<<< HEAD
 	// Kong deck export
 	for ksIndex, kongService := range kongServices {
 		if len(kongService.Routes) <= 0 {
@@ -38,17 +30,6 @@ func MigrateRoute(kongConfig *Config, apisixConfig *apisix.Config) error {
 			a6Routes := ConvertKongRouteToA6(kongService, kongRoute)
 			if len(a6Routes) <= 0 {
 				fmt.Printf("Kong route [ %s ] to APISIX conversion failure\n", kongRouteId)
-=======
-	var err error
-	// compatible kong deck and kong config mode
-	for _, service := range kongServices {
-		var kongServiceRoutes *Routes
-		if len(service.Routes) > 0 {
-			kongServiceRoutes = &service.Routes
-		} else {
-			kongServiceRoutes, err = GetKongRoutesByServiceID(&kongRoutes, service.ID)
-			if kongServiceRoutes == nil || err != nil {
->>>>>>> 23abdb5 (feat: compatible with kong deck and kong config)
 				continue
 			}
 			apisixConfig.Routes = append(apisixConfig.Routes, a6Routes...)
@@ -70,7 +51,6 @@ func MigrateRoute(kongConfig *Config, apisixConfig *apisix.Config) error {
 			continue
 		}
 
-<<<<<<< HEAD
 		kongService, err := FindKongServiceById(&kongConfig.Services, kongRoute.ServiceID)
 		if err != nil {
 			fmt.Printf("Kong route [ %s ] mapping service not found\n", kongRouteId)
@@ -87,67 +67,6 @@ func MigrateRoute(kongConfig *Config, apisixConfig *apisix.Config) error {
 
 	fmt.Println("Kong to APISIX routes configuration conversion completed")
 	return nil
-=======
-		KTAConversionKongRouter(apisixConfig, service, *kongServiceRoutes)
-	}
-
-	fmt.Println("Kong to APISIX routes configuration conversion completed")
-	return nil
-}
-
-func KTAConversionKongRouter(apisixConfig *apisix.Config, kongService Service, kongRoutes Routes) {
-	var apisixRoute apisix.Route
-	var kongRoute Route
-	// Kong and apisix plugin structure and routing rules are different, so split routing
-	for routeIndex := range kongRoutes {
-		kongRoute = kongRoutes[routeIndex]
-		isPathGroup := len(kongRoute.Paths) > 1
-		for pathIndex, path := range kongRoute.Paths {
-			if len(kongRoute.ID) <= 0 {
-				apisixRoute.ID = uuid.NewV4().String()
-				apisixRoute.Name = kongRoute.Name
-			} else {
-				if isPathGroup {
-					apisixRoute.ID = kongRoute.ID + "-" + strconv.Itoa(pathIndex+1)
-					apisixRoute.Name = kongRoute.Name + "-" + strconv.Itoa(pathIndex+1)
-				} else {
-					apisixRoute.ID = kongRoute.ID
-					apisixRoute.Name = kongRoute.Name
-				}
-			}
-			apisixRoute.URI = path + "*"
-			apisixRoute.Hosts = kongRoute.Hosts
-			apisixRoute.Methods = kongRoute.Methods
-			apisixRoute.Priority = kongRoute.RegexPriority
-			apisixRoute.ServiceID = kongService.ID
-			proxyRewrite := GenerateProxyRewritePluginConfig(kongService.Path, path,
-				kongRoute.StripPath, kongRoute.PathHandling)
-			// mapping kong to apisix upstream request URI
-			apisixRoute.Plugins.ProxyRewrite = proxyRewrite
-			apisixConfig.Routes = append(apisixConfig.Routes, apisixRoute)
-		}
-		fmt.Fprintf(os.Stdout, "Kong route [ %s ] to APISIX conversion completed\n", kongRoute.ID)
-	}
-}
-
-func GetKongRoutesByServiceID(kongRouters *Routes, kongServiceID string) (*Routes, error) {
-	if kongRouters == nil {
-		return nil, errors.New("kong routers is nil or invalid")
-	}
-
-	if len(kongServiceID) <= 0 {
-		return nil, errors.New("kong service id invalid")
-	}
-
-	var kongServiceRoutes Routes
-	for _, router := range *kongRouters {
-		if router.Service == kongServiceID {
-			kongServiceRoutes = append(kongServiceRoutes, router)
-		}
-	}
-
-	return &kongServiceRoutes, nil
->>>>>>> 23abdb5 (feat: compatible with kong deck and kong config)
 }
 
 func ConvertKongRouteToA6(kongService Service, kongRoute Route) apisix.Routes {
@@ -197,11 +116,7 @@ func ConvertKongRouteToA6(kongService Service, kongRoute Route) apisix.Routes {
 // GenerateProxyRewritePluginConfig Generate routing and forwarding rules
 // https://docs.konghq.com/gateway-oss/2.4.x/admin-api/#path-handling-algorithms
 func GenerateProxyRewritePluginConfig(servicePath string, routerPath string, stripPath bool,
-<<<<<<< HEAD
 	pathHandling string) *apisix.ProxyRewrite {
-=======
-	pathHandling string) apisix.ProxyRewrite {
->>>>>>> 23abdb5 (feat: compatible with kong deck and kong config)
 	if len(servicePath) == 0 {
 		servicePath = "/"
 	}
@@ -224,9 +139,5 @@ func GenerateProxyRewritePluginConfig(servicePath string, routerPath string, str
 
 	var proxyRewrite apisix.ProxyRewrite
 	proxyRewrite.RegexURI = []string{pathRegex, pathPattern}
-<<<<<<< HEAD
 	return &proxyRewrite
-=======
-	return proxyRewrite
->>>>>>> 23abdb5 (feat: compatible with kong deck and kong config)
 }

@@ -134,47 +134,6 @@ func TestMigrateRoute(t *testing.T) {
 		assert.Equal(t, apisixConfig.Routes[1].Priority, testMigrateRouteExpect.RouteExpects[1].Priority)
 		assert.Equal(t, apisixConfig.Routes[1].ServiceID, testMigrateRouteExpect.RouteExpects[1].ServiceId)
 	}
-<<<<<<< HEAD
-=======
-	kongConfig.Routes = append(kongConfig.Routes, kongRoute2)
-
-	err := MigrateRoute(&kongConfig, &apisixConfig)
-	assert.NoError(t, err)
-	assert.Equal(t, len(apisixConfig.Routes), 4)
-
-	assert.Equal(t, apisixConfig.Routes[0].ID, kongRoute1.ID+"-1")
-	assert.Equal(t, apisixConfig.Routes[0].Name, kongRoute1.Name+"-1")
-	assert.Equal(t, apisixConfig.Routes[0].URI, kongRoute1.Paths[0]+"*")
-	assert.Equal(t, apisixConfig.Routes[0].Methods, kongRoute1.Methods)
-	assert.Equal(t, apisixConfig.Routes[0].Hosts, kongRoute1.Hosts)
-	assert.Equal(t, apisixConfig.Routes[0].ServiceID, kongService.ID)
-	assert.Equal(t, len(apisixConfig.Routes[0].Plugins), 1)
-
-	assert.Equal(t, apisixConfig.Routes[1].ID, kongRoute1.ID+"-2")
-	assert.Equal(t, apisixConfig.Routes[1].Name, kongRoute1.Name+"-2")
-	assert.Equal(t, apisixConfig.Routes[1].URI, kongRoute1.Paths[1]+"*")
-	assert.Equal(t, apisixConfig.Routes[1].Methods, kongRoute1.Methods)
-	assert.Equal(t, apisixConfig.Routes[1].Hosts, kongRoute1.Hosts)
-	assert.Equal(t, apisixConfig.Routes[1].ServiceID, kongService.ID)
-	assert.Equal(t, len(apisixConfig.Routes[1].Plugins), 1)
-
-	assert.Equal(t, apisixConfig.Routes[2].ID, kongRoute2.ID+"-1")
-	assert.Equal(t, apisixConfig.Routes[2].Name, kongRoute2.Name+"-1")
-	assert.Equal(t, apisixConfig.Routes[2].URI, kongRoute2.Paths[0]+"*")
-	assert.Equal(t, apisixConfig.Routes[2].Methods, kongRoute2.Methods)
-	assert.Equal(t, apisixConfig.Routes[2].Hosts, kongRoute2.Hosts)
-	assert.Equal(t, apisixConfig.Routes[2].ServiceID, kongService.ID)
-	assert.Equal(t, len(apisixConfig.Routes[2].Plugins), 1)
-
-	assert.Equal(t, apisixConfig.Routes[3].ID, kongRoute2.ID+"-2")
-	assert.Equal(t, apisixConfig.Routes[3].Name, kongRoute2.Name+"-2")
-	assert.Equal(t, apisixConfig.Routes[3].URI, kongRoute2.Paths[1]+"*")
-	assert.Equal(t, apisixConfig.Routes[3].Methods, kongRoute2.Methods)
-	assert.Equal(t, apisixConfig.Routes[3].Hosts, kongRoute2.Hosts)
-	assert.Equal(t, apisixConfig.Routes[3].ServiceID, kongService.ID)
-	assert.Equal(t, len(apisixConfig.Routes[3].Plugins), 1)
-
->>>>>>> 23abdb5 (feat: compatible with kong deck and kong config)
 }
 
 func TestGenerateProxyRewritePluginConfig(t *testing.T) {
