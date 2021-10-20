@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/api7/kong-to-apisix/pkg/apisix"
+
 	"github.com/kong/deck/dump"
 	"github.com/kong/deck/file"
 	"github.com/kong/deck/state"
@@ -43,6 +45,15 @@ func DumpKong(kongAddr string, fileName string) error {
 	})
 }
 
-func KTATimeoutConversion(kongTime uint) float32 {
-	return float32(kongTime) / float32(1000)
+func AfterMigrate(apisixConfig *apisix.Config) error {
+	// Processing consumer data
+	if len(apisixConfig.Consumers) > 0 {
+		for consumerIndex, consumer := range apisixConfig.Consumers {
+			if len(consumer.ID) > 0 {
+				// If there is a consumer ID, it will cause APISIX verification to fail
+				apisixConfig.Consumers[consumerIndex].ID = ""
+			}
+		}
+	}
+	return nil
 }

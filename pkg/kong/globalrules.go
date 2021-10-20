@@ -3,35 +3,65 @@ package kong
 import (
 	"fmt"
 
+	uuid "github.com/satori/go.uuid"
+
 	"github.com/api7/kong-to-apisix/pkg/apisix"
-	"github.com/api7/kong-to-apisix/pkg/utils"
 )
 
-// TODO: need to take care of plugin precedence
+// MigrateGlobalRules attention to plugin priority
 // https://docs.konghq.com/gateway-oss/2.4.x/admin-api/#precedence
-func MigrateGlobalRules(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.GlobalRules, error) {
-	kongGlobalPlugins := kongConfig.Plugins
-	var apisixGlobalRules apisix.GlobalRules
-
-	for _, p := range kongGlobalPlugins {
-		//fmt.Printf("got plugin: %#v\n", p)
-		if f, ok := pluginMap[p.Name]; ok {
-			if p.Enabled {
-				if apisixPlugin, configYaml, err := f(p); err != nil {
-					return nil, err
-				} else {
-					apisixGlobalRule := apisix.GlobalRule{
-						Plugins: apisix.Plugins(apisixPlugin),
-					}
-					apisixGlobalRules = append(apisixGlobalRules, apisixGlobalRule)
-					for configIndex := range configYaml {
-						*configYamlAll = append(*configYamlAll, configYaml[configIndex])
-					}
-				}
-			}
-		} else {
-			fmt.Printf("Plugin %s not supported by apisix yet\n", p.Name)
+func MigrateGlobalRules(kongConfig *Config, apisixConfig *apisix.Config) error {
+	kongPlugins := kongConfig.Plugins
+	for kgpIndex, kongGlobalPlugin := range kongPlugins {
+		if !kongGlobalPlugin.Enabled {
+			continue
 		}
+
+		if !KTAIsKongGlobalPlugin(kongGlobalPlugin) {
+			continue
+		}
+
+		kongGlobalPluginId := kongGlobalPlugin.ID
+		if len(kongGlobalPlugin.ID) <= 0 {
+			kongGlobalPluginId = uuid.NewV4().String()
+			kongConfig.Plugins[kgpIndex].ID = kongGlobalPluginId
+		}
+
+		var apisixGlobalRule apisix.GlobalRule
+		apisixGlobalRule.ID = kongGlobalPluginId
+		switch kongGlobalPlugin.Name {
+		case PluginKeyAuth:
+			apisixGlobalRule.Plugins.KeyAuth = KTAConversionKongPluginKeyAuth(kongGlobalPlugin)
+			if apisixGlobalRule.Plugins.KeyAuth == nil {
+				fmt.Printf("Kong global plugin %s [ %s ] configuration invalid\n", kongGlobalPlugin.Name,
+					apisixGlobalRule.ID)
+				continue
+			}
+		case PluginRateLimiting:
+			apisixGlobalRule.Plugins.LimitCount = KTAConversionKongPluginRateLimiting(kongGlobalPlugin)
+			if apisixGlobalRule.Plugins.LimitCount == nil {
+				fmt.Printf("Kong global plugin %s [ %s ] configuration invalid\n", kongGlobalPlugin.Name,
+					apisixGlobalRule.ID)
+				continue
+			}
+		case PluginProxyCache:
+			apisixGlobalRule.Plugins.ProxyCache = KTAConversionKongPluginProxyCache(kongGlobalPlugin)
+			if apisixGlobalRule.Plugins.ProxyCache == nil {
+				fmt.Printf("Kong global plugin %s [ %s ] configuration invalid\n", kongGlobalPlugin.Name,
+					apisixGlobalRule.ID)
+				continue
+			}
+		default:
+			fmt.Printf("Kong global plugin %s [ %s ] not supported by apisix yet\n", kongGlobalPlugin.Name,
+				apisixGlobalRule.ID)
+			continue
+		}
+
+		apisixConfig.GlobalRules = append(apisixConfig.GlobalRules, apisixGlobalRule)
+		fmt.Printf("Kong global plugin %s [ %s ] to APISIX conversion completed\n", kongGlobalPlugin.Name,
+			apisixGlobalRule.ID)
 	}
-	return apisixGlobalRules, nil
+
+	fmt.Println("Kong to APISIX global plugins configuration conversion completed")
+	return nil
 }

@@ -1,11 +1,16 @@
 package kong
 
 type Config struct {
-	Services  Services  `json:"services,omitempty" yaml:"services,omitempty"`
-	Consumers Consumers `json:"consumers,omitempty" yaml:"consumers,omitempty"`
-	Plugins   Plugins   `json:"plugins,omitempty" yaml:"plugins,omitempty"`
-	Upstreams Upstreams `json:"upstreams,omitempty" yaml:"upstreams,omitempty"`
-	Routes    Routes    `json:"routes,omitempty" yaml:"routes,omitempty"`
+	Services             Services             `json:"services,omitempty" yaml:"services,omitempty"`
+	Consumers            Consumers            `json:"consumers,omitempty" yaml:"consumers,omitempty"`
+	Plugins              Plugins              `json:"plugins,omitempty" yaml:"plugins,omitempty"`
+	Upstreams            Upstreams            `json:"upstreams,omitempty" yaml:"upstreams,omitempty"`
+	Routes               Routes               `json:"routes,omitempty" yaml:"routes,omitempty"`
+	Targets              Targets              `json:"targets,omitempty" yaml:"targets,omitempty"`
+	KeyAuthCredentials   KeyAuthCredentials   `json:"keyauth_credentials,omitempty" yaml:"keyauth_credentials,omitempty"`
+	BasicAuthCredentials BasicAuthCredentials `json:"basicauth_credentials,omitempty" yaml:"basicauth_credentials,omitempty"`
+	HmacAuthCredentials  HmacAuthCredentials  `json:"hmacauth_credentials,omitempty" yaml:"hmacauth_credentials,omitempty"`
+	JwtSecrets           JwtSecrets           `json:"jwt_secrets,omitempty" yaml:"jwt_secrets,omitempty"`
 }
 
 // Common Configuration
@@ -40,6 +45,7 @@ type Service struct {
 	CACertificates    []string    `json:"ca_certificates,omitempty" yaml:"ca_certificates,omitempty"`
 	URL               string      `json:"url,omitempty" yaml:"url,omitempty"`
 	Routes            Routes      `json:"routes,omitempty" yaml:"routes,omitempty"`
+	Plugins           Plugins     `json:"plugins,omitempty" yaml:"plugins,omitempty"`
 }
 
 type Services []Service
@@ -66,7 +72,7 @@ type Route struct {
 	Sources                 []CIDRPort          `json:"sources,omitempty" yaml:"sources,omitempty"`
 	Destinations            []CIDRPort          `json:"destinations,omitempty" yaml:"destinations,omitempty"`
 	Tags                    []string            `json:"tags,omitempty" yaml:"tags,omitempty"`
-	Service                 string              `json:"service,omitempty" yaml:"service,omitempty"`
+	ServiceID               string              `json:"service,omitempty" yaml:"service,omitempty"`
 	Plugins                 Plugins             `json:"plugins,omitempty" yaml:"plugins,omitempty"`
 }
 
@@ -75,29 +81,37 @@ type Routes []Route
 // Consumer Configuration
 
 type KeyAuthCredential struct {
-	Key string `json:"key,omitempty" yaml:"key,omitempty"`
+	ID         string `json:"id,omitempty" yaml:"id,omitempty"`
+	ConsumerID string `json:"consumer,omitempty" yaml:"consumer,omitempty"`
+	Key        string `json:"key,omitempty" yaml:"key,omitempty"`
 }
 
 type KeyAuthCredentials []KeyAuthCredential
 
 type BasicAuthCredential struct {
-	Username string `json:"username,omitempty" yaml:"username,omitempty"`
-	Password string `json:"password,omitempty" yaml:"password,omitempty"`
+	ID         string `json:"id,omitempty" yaml:"id,omitempty"`
+	ConsumerID string `json:"consumer,omitempty" yaml:"consumer,omitempty"`
+	Username   string `json:"username,omitempty" yaml:"username,omitempty"`
+	Password   string `json:"password,omitempty" yaml:"password,omitempty"`
 }
 
 type BasicAuthCredentials []BasicAuthCredential
 
 type HmacAuthCredential struct {
-	Username string `json:"username,omitempty" yaml:"username,omitempty"`
-	Secret   string `json:"secret,omitempty" yaml:"secret,omitempty"`
+	ID         string `json:"id,omitempty" yaml:"id,omitempty"`
+	ConsumerID string `json:"consumer,omitempty" yaml:"consumer,omitempty"`
+	Username   string `json:"username,omitempty" yaml:"username,omitempty"`
+	Secret     string `json:"secret,omitempty" yaml:"secret,omitempty"`
 }
 
 type HmacAuthCredentials []HmacAuthCredential
 
 type JwtSecret struct {
-	Algorithm string `json:"algorithm,omitempty" yaml:"algorithm,omitempty"`
-	Key       string `json:"key,omitempty" yaml:"key,omitempty"`
-	Secret    string `json:"secret,omitempty" yaml:"secret,omitempty"`
+	ID         string `json:"id,omitempty" yaml:"id,omitempty"`
+	ConsumerID string `json:"consumer,omitempty" yaml:"consumer,omitempty"`
+	Algorithm  string `json:"algorithm,omitempty" yaml:"algorithm,omitempty"`
+	Key        string `json:"key,omitempty" yaml:"key,omitempty"`
+	Secret     string `json:"secret,omitempty" yaml:"secret,omitempty"`
 }
 
 type JwtSecrets []JwtSecret
@@ -221,11 +235,11 @@ type Unhealthy struct {
 type Upstreams []Upstream
 
 type Target struct {
-	ID       string   `json:"id,omitempty" yaml:"id,omitempty"`
-	Target   string   `json:"target,omitempty" yaml:"target,omitempty"`
-	Upstream Upstream `json:"upstream,omitempty" yaml:"upstream,omitempty"`
-	Weight   int      `json:"weight,omitempty" yaml:"weight,omitempty"`
-	Tags     []string `json:"tags,omitempty" yaml:"tags,omitempty"`
+	ID         string   `json:"id,omitempty" yaml:"id,omitempty"`
+	Target     string   `json:"target,omitempty" yaml:"target,omitempty"`
+	UpstreamID string   `json:"upstream,omitempty" yaml:"upstream,omitempty"`
+	Weight     int      `json:"weight,omitempty" yaml:"weight,omitempty"`
+	Tags       []string `json:"tags,omitempty" yaml:"tags,omitempty"`
 }
 
 type Targets []Target
