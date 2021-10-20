@@ -1,86 +1,132 @@
 package kong
 
 import (
-	"fmt"
-
-	v1 "github.com/apache/apisix-ingress-controller/pkg/types/apisix/v1"
-	"github.com/api7/kong-to-apisix/pkg/utils"
+	"github.com/api7/kong-to-apisix/pkg/apisix"
 )
 
-var pluginMap = map[string]func(p Plugin) (v1.Plugins, []utils.YamlItem, error){
-	"proxy-cache":   proxyCache,
-	"key-auth":      keyAuth,
-	"rate-limiting": rateLimiting,
+const PluginKeyAuth = "key-auth"
+const PluginRateLimiting = "rate-limiting"
+const PluginRateLimitingPolicyLocal = "local"
+const PluginRateLimitingPolicyRedis = "redis"
+const PluginProxyCache = "proxy-cache"
+
+func KTAIsKongGlobalPlugin(kongPlugin Plugin) bool {
+	return len(kongPlugin.ServiceID) <= 0 && len(kongPlugin.RouteID) <= 0 && len(kongPlugin.ConsumerID) <= 0
 }
 
-// TODO: some configuration need to be configured in config.yaml
-//       including cache_ttl
-func proxyCache(p Plugin) (v1.Plugins, []utils.YamlItem, error) {
-	pluginConfig := make(map[string]interface{})
-	pluginConfig["cache_method"] = p.Config["request_method"]
-	pluginConfig["cache_http_status"] = p.Config["response_code"]
-
-	var configYaml []utils.YamlItem
-	if cacheTTL, ok := p.Config["cache_ttl"].(int); ok {
-		configYaml = append(configYaml, utils.YamlItem{
-			Value: fmt.Sprintf("%v", cacheTTL) + "s",
-			Path:  []interface{}{"apisix", "proxy_cache", "cache_ttl"},
-		})
+func KTAConversionKongPluginKeyAuth(kongPlugin Plugin) *apisix.KeyAuth {
+	var keyName string
+	config := kongPlugin.Config
+	if config["key_names"] != nil {
+		keyName = config["key_names"].([]interface{})[0].(string)
 	}
-
-	return v1.Plugins{"proxy-cache": pluginConfig}, configYaml, nil
+	if len(keyName) > 0 {
+		var apisixKeyAuth apisix.KeyAuth
+		//apisixKeyAuth.Header = keyName
+		//apisixKeyAuth.Query = keyName
+		return &apisixKeyAuth
+	}
+	return nil
 }
 
-// TODO: kong could configure rate limiting in different time range
-//       for now fetch the value in minimum time range
-func rateLimiting(p Plugin) (v1.Plugins, []utils.YamlItem, error) {
-	pluginConfig := make(map[string]interface{})
+func KTAConversionKongPluginRateLimiting(kongPlugin Plugin) *apisix.LimitCount {
+	var count int
+	var timeWindow int
+	var policy string
+	var redisHost string
+	var redisPort int
+	var redisPassword string
+	var redisTimeout int
+	var redisDatabase int
 
-	if p.Config["second"] != nil {
-		pluginConfig["count"] = p.Config["second"]
-		pluginConfig["time_window"] = 1
-	} else if p.Config["minute"] != nil {
-		pluginConfig["count"] = p.Config["minute"]
-		pluginConfig["time_window"] = 1 * 60
-	} else if p.Config["hour"] != nil {
-		pluginConfig["count"] = p.Config["hour"]
-		pluginConfig["time_window"] = 1 * 60 * 60
-	} else if p.Config["day"] != nil {
-		pluginConfig["count"] = p.Config["day"]
-		pluginConfig["time_window"] = 1 * 60 * 60 * 24
-	} else if p.Config["month"] != nil {
-		pluginConfig["count"] = p.Config["day"]
-		pluginConfig["time_window"] = 1 * 60 * 60 * 24 * 30
-	} else if p.Config["year"] != nil {
-		pluginConfig["count"] = p.Config["day"]
-		pluginConfig["time_window"] = 1 * 60 * 60 * 24 * 30 * 365
+	config := kongPlugin.Config
+	if config["second"] != nil {
+		count = config["second"].(int)
+		timeWindow = 1
+	} else if config["minute"] != nil {
+		count = config["minute"].(int)
+		timeWindow = 1 * 60
+	} else if config["hour"] != nil {
+		count = config["hour"].(int)
+		timeWindow = 1 * 60 * 60
+	} else if config["day"] != nil {
+		count = config["day"].(int)
+		timeWindow = 1 * 60 * 60 * 24
+	} else if config["month"] != nil {
+		count = config["month"].(int)
+		timeWindow = 1 * 60 * 60 * 24 * 30
+	} else if config["year"] != nil {
+		count = config["year"].(int)
+		timeWindow = 1 * 60 * 60 * 24 * 30 * 365
 	}
 
-	switch p.Config["policy"] {
-	case "local":
-		pluginConfig["policy"] = "local"
-	case "cluster":
-		fmt.Println(`Convert rate limit policy from 'kong cluster' to 'local'\n
-					suggest to use redis to achieve global rate limiting.`)
-		pluginConfig["policy"] = "local"
-	case "redis":
-		pluginConfig["policy"] = "redis"
-		pluginConfig["redis_host"] = p.Config["redis_host"]
-		pluginConfig["redis_port"] = p.Config["redis_port"]
-		pluginConfig["redis_password"] = p.Config["redis_password"]
-		pluginConfig["redis_timeout"] = p.Config["redis_timeout"]
-		pluginConfig["redis_database"] = p.Config["redis_database"]
+	if config["policy"] != nil {
+		policy = config["policy"].(string)
+		switch policy {
+		case PluginRateLimitingPolicyRedis:
+			if config["redis_host"] != nil {
+				redisHost = config["redis_host"].(string)
+			}
+			if config["redis_port"] != nil {
+				redisPort = config["redis_port"].(int)
+			}
+			if config["redis_password"] != nil {
+				redisPassword = config["redis_password"].(string)
+			}
+			if config["redis_timeout"] != nil {
+				redisTimeout = config["redis_timeout"].(int)
+			}
+			if config["redis_database"] != nil {
+				redisDatabase = config["redis_database"].(int)
+			}
+		default:
+			// other type reset to local
+			policy = PluginRateLimitingPolicyLocal
+		}
 	}
 
-	pluginConfig["rejected_code"] = 429
-	return v1.Plugins{"limit-count": pluginConfig}, nil, nil
+	if timeWindow > 0 && count > 0 && len(policy) > 0 {
+		var apisixLimitCount apisix.LimitCount
+		apisixLimitCount.Count = count
+		apisixLimitCount.TimeWindow = timeWindow
+		apisixLimitCount.Policy = policy
+		apisixLimitCount.RejectedCode = 429
+		if policy == PluginRateLimitingPolicyRedis {
+			apisixLimitCount.RedisHost = redisHost
+			apisixLimitCount.RedisPort = redisPort
+			apisixLimitCount.RedisPassword = redisPassword
+			apisixLimitCount.RedisTimeout = redisTimeout
+			apisixLimitCount.RedisDatabase = redisDatabase
+		}
+		return &apisixLimitCount
+	}
+	return nil
 }
 
-func keyAuth(p Plugin) (v1.Plugins, []utils.YamlItem, error) {
-	pluginConfig := make(map[string]interface{})
-	pluginConfig["key"] = p.Config["key_names"]
+func KTAConversionKongPluginProxyCache(kongPlugin Plugin) *apisix.ProxyCache {
+	var cacheMethod []string
+	var cacheHttpStatus []int
+	config := kongPlugin.Config
+	if config["request_method"] != nil {
+		for _, method := range config["request_method"].([]interface{}) {
+			cacheMethod = append(cacheMethod, method.(string))
+		}
+	}
+	if config["response_code"] != nil {
+		for _, code := range config["response_code"].([]interface{}) {
+			cacheHttpStatus = append(cacheHttpStatus, code.(int))
+		}
+	}
 
-	emptyMap := make(map[string]interface{})
-
-	return v1.Plugins{"key-auth": emptyMap}, nil, nil
+	if len(cacheMethod) <= 0 && len(cacheHttpStatus) <= 0 {
+		return nil
+	}
+	var apisixProxyCache apisix.ProxyCache
+	if len(cacheMethod) >= 1 {
+		apisixProxyCache.CacheMethod = cacheMethod
+	}
+	if len(cacheHttpStatus) >= 1 {
+		apisixProxyCache.CacheHttpStatus = cacheHttpStatus
+	}
+	return &apisixProxyCache
 }

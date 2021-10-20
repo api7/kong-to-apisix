@@ -35,11 +35,10 @@ func Migrate(kongConfig *Config) (*apisix.Config, *[]utils.YamlItem, error) {
 		apisixConfig.Consumers = consumers
 	}
 
-	if globalRules, err := MigrateGlobalRules(kongConfig, &configYamlAll); err != nil {
+	if err := MigrateGlobalRules(kongConfig, apisixConfig); err != nil {
 		return nil, nil, err
-	} else {
-		apisixConfig.GlobalRules = globalRules
 	}
+
 	return apisixConfig, &configYamlAll, nil
 }
 

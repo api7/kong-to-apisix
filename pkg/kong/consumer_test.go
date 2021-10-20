@@ -13,9 +13,7 @@ func TestMigrateConsumer(t *testing.T) {
 			{
 				CustomID: "test-id-01",
 				Username: "test-user-01",
-				KeyAuthCredentials: []struct {
-					Key string `yaml:"key"`
-				}{
+				KeyAuthCredentials: []KeyAuthCredential{
 					{
 						Key: "test-key-01",
 					},
