@@ -9,6 +9,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type RateLimitingExpectResult struct {
+	Count      int
+	TimeWindow int
+	Policy     string
+}
+
+type RateLimitingTest struct {
+	RateLimitingPluginConfig Plugin
+	RateLimitingExpectResult RateLimitingExpectResult
+}
+
 func TestMigrateGlobalRules(t *testing.T) {
 	var err error
 	var kongConfig Config
@@ -39,101 +50,118 @@ func TestMigrateGlobalRules(t *testing.T) {
 		assert.Equal(t, kongPluginKeyAuth.ID, apisixConfig.GlobalRules[0].ID)
 	}
 
-	// RateLimiting Global Plugin Test
-	kongPluginRateLimitings := Plugins{
+	kongPluginRateLimitingTests := []RateLimitingTest{
 		{
-			ID:      uuid.NewV4().String(),
-			Name:    PluginRateLimiting,
-			Enabled: true,
-			Config: map[string]interface{}{
-				"second": 5,
-				"policy": PluginRateLimitingPolicyLocal,
+			RateLimitingPluginConfig: Plugin{
+				ID:      uuid.NewV4().String(),
+				Name:    PluginRateLimiting,
+				Enabled: true,
+				Config: map[string]interface{}{
+					"second": 5,
+					"policy": PluginRateLimitingPolicyLocal,
+				},
+			},
+			RateLimitingExpectResult: RateLimitingExpectResult{
+				Count:      5,
+				TimeWindow: 1,
+				Policy:     PluginRateLimitingPolicyLocal,
 			},
 		},
 		{
-			ID:      uuid.NewV4().String(),
-			Name:    PluginRateLimiting,
-			Enabled: true,
-			Config: map[string]interface{}{
-				"minute": 5,
-				"policy": PluginRateLimitingPolicyLocal,
+			RateLimitingPluginConfig: Plugin{
+				ID:      uuid.NewV4().String(),
+				Name:    PluginRateLimiting,
+				Enabled: true,
+				Config: map[string]interface{}{
+					"minute": 10,
+					"policy": PluginRateLimitingPolicyLocal,
+				},
+			},
+			RateLimitingExpectResult: RateLimitingExpectResult{
+				Count:      10,
+				TimeWindow: 1 * 60,
+				Policy:     PluginRateLimitingPolicyLocal,
 			},
 		},
 		{
-			ID:      uuid.NewV4().String(),
-			Name:    PluginRateLimiting,
-			Enabled: true,
-			Config: map[string]interface{}{
-				"hour":   5,
-				"policy": PluginRateLimitingPolicyLocal,
+			RateLimitingPluginConfig: Plugin{
+				ID:      uuid.NewV4().String(),
+				Name:    PluginRateLimiting,
+				Enabled: true,
+				Config: map[string]interface{}{
+					"hour":   15,
+					"policy": PluginRateLimitingPolicyLocal,
+				},
+			},
+			RateLimitingExpectResult: RateLimitingExpectResult{
+				Count:      15,
+				TimeWindow: 1 * 60 * 60,
+				Policy:     PluginRateLimitingPolicyLocal,
 			},
 		},
 		{
-			ID:      uuid.NewV4().String(),
-			Name:    PluginRateLimiting,
-			Enabled: true,
-			Config: map[string]interface{}{
-				"day":    5,
-				"policy": PluginRateLimitingPolicyLocal,
+			RateLimitingPluginConfig: Plugin{
+				ID:      uuid.NewV4().String(),
+				Name:    PluginRateLimiting,
+				Enabled: true,
+				Config: map[string]interface{}{
+					"day":    20,
+					"policy": PluginRateLimitingPolicyLocal,
+				},
+			},
+			RateLimitingExpectResult: RateLimitingExpectResult{
+				Count:      20,
+				TimeWindow: 1 * 60 * 60 * 24,
+				Policy:     PluginRateLimitingPolicyLocal,
 			},
 		},
 		{
-			ID:      uuid.NewV4().String(),
-			Name:    PluginRateLimiting,
-			Enabled: true,
-			Config: map[string]interface{}{
-				"month":  5,
-				"policy": PluginRateLimitingPolicyLocal,
+			RateLimitingPluginConfig: Plugin{
+				ID:      uuid.NewV4().String(),
+				Name:    PluginRateLimiting,
+				Enabled: true,
+				Config: map[string]interface{}{
+					"month":  25,
+					"policy": PluginRateLimitingPolicyLocal,
+				},
+			},
+			RateLimitingExpectResult: RateLimitingExpectResult{
+				Count:      25,
+				TimeWindow: 1 * 60 * 60 * 24 * 30,
+				Policy:     PluginRateLimitingPolicyLocal,
 			},
 		},
 		{
-			ID:      uuid.NewV4().String(),
-			Name:    PluginRateLimiting,
-			Enabled: true,
-			Config: map[string]interface{}{
-				"year":   5,
-				"policy": PluginRateLimitingPolicyLocal,
+			RateLimitingPluginConfig: Plugin{
+				ID:      uuid.NewV4().String(),
+				Name:    PluginRateLimiting,
+				Enabled: true,
+				Config: map[string]interface{}{
+					"year":   5,
+					"policy": PluginRateLimitingPolicyLocal,
+				},
+			},
+			RateLimitingExpectResult: RateLimitingExpectResult{
+				Count:      5,
+				TimeWindow: 1 * 60 * 60 * 24 * 30 * 365,
+				Policy:     PluginRateLimitingPolicyLocal,
 			},
 		},
 	}
 
-	for _, kongPluginRateLimiting := range kongPluginRateLimitings {
+	for _, kongPluginRateLimitingTest := range kongPluginRateLimitingTests {
 		kongConfig = Config{}
 		apisixConfig = apisix.Config{}
-		kongConfig.Plugins = append(kongConfig.Plugins, kongPluginRateLimiting)
+		kongConfig.Plugins = append(kongConfig.Plugins, kongPluginRateLimitingTest.RateLimitingPluginConfig)
 		err = MigrateGlobalRules(&kongConfig, &apisixConfig)
 		assert.NoError(t, err)
-		assert.Equal(t, kongPluginRateLimiting.ID, apisixConfig.GlobalRules[0].ID)
-		if kongPluginRateLimiting.Config["second"] != nil {
-			assert.Equal(t, kongPluginRateLimiting.Config["second"].(int),
-				apisixConfig.GlobalRules[0].Plugins.LimitCount.Count)
-			assert.Equal(t, 1, apisixConfig.GlobalRules[0].Plugins.LimitCount.TimeWindow)
-		}
-		if kongPluginRateLimiting.Config["minute"] != nil {
-			assert.Equal(t, kongPluginRateLimiting.Config["minute"].(int),
-				apisixConfig.GlobalRules[0].Plugins.LimitCount.Count)
-			assert.Equal(t, 1*60, apisixConfig.GlobalRules[0].Plugins.LimitCount.TimeWindow)
-		}
-		if kongPluginRateLimiting.Config["hour"] != nil {
-			assert.Equal(t, kongPluginRateLimiting.Config["hour"].(int),
-				apisixConfig.GlobalRules[0].Plugins.LimitCount.Count)
-			assert.Equal(t, 1*60*60, apisixConfig.GlobalRules[0].Plugins.LimitCount.TimeWindow)
-		}
-		if kongPluginRateLimiting.Config["day"] != nil {
-			assert.Equal(t, kongPluginRateLimiting.Config["day"].(int),
-				apisixConfig.GlobalRules[0].Plugins.LimitCount.Count)
-			assert.Equal(t, 1*60*60*24, apisixConfig.GlobalRules[0].Plugins.LimitCount.TimeWindow)
-		}
-		if kongPluginRateLimiting.Config["month"] != nil {
-			assert.Equal(t, kongPluginRateLimiting.Config["month"].(int),
-				apisixConfig.GlobalRules[0].Plugins.LimitCount.Count)
-			assert.Equal(t, 1*60*60*24*30, apisixConfig.GlobalRules[0].Plugins.LimitCount.TimeWindow)
-		}
-		if kongPluginRateLimiting.Config["year"] != nil {
-			assert.Equal(t, kongPluginRateLimiting.Config["year"].(int),
-				apisixConfig.GlobalRules[0].Plugins.LimitCount.Count)
-			assert.Equal(t, 1*60*60*24*30*365, apisixConfig.GlobalRules[0].Plugins.LimitCount.TimeWindow)
-		}
+		assert.Equal(t, kongPluginRateLimitingTest.RateLimitingPluginConfig.ID, apisixConfig.GlobalRules[0].ID)
+		assert.Equal(t, kongPluginRateLimitingTest.RateLimitingExpectResult.Policy,
+			apisixConfig.GlobalRules[0].Plugins.LimitCount.Policy)
+		assert.Equal(t, kongPluginRateLimitingTest.RateLimitingExpectResult.Count,
+			apisixConfig.GlobalRules[0].Plugins.LimitCount.Count)
+		assert.Equal(t, kongPluginRateLimitingTest.RateLimitingExpectResult.TimeWindow,
+			apisixConfig.GlobalRules[0].Plugins.LimitCount.TimeWindow)
 	}
 
 	// ProxyCache Global Plugin Test
