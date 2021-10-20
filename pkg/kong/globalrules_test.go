@@ -35,6 +35,8 @@ func TestMigrateGlobalRules(t *testing.T) {
 		apisixConfig = apisix.Config{}
 		kongConfig.Plugins = append(kongConfig.Plugins, kongPluginKeyAuth)
 		err = MigrateGlobalRules(&kongConfig, &apisixConfig)
+		assert.NoError(t, err)
+		assert.Equal(t, kongPluginKeyAuth.ID, apisixConfig.GlobalRules[0].ID)
 	}
 
 	// RateLimiting Global Plugin Test
