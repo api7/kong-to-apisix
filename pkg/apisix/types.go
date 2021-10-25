@@ -56,6 +56,7 @@ type Services []Service
 // Consumer Configuration
 // Consumer is the apisix consumer definition.
 type Consumer struct {
+	ID       string            `json:"id,omitempty" yaml:"id,omitempty"`
 	Username string            `json:"username" yaml:"username"`
 	Desc     string            `json:"desc,omitempty" yaml:"desc,omitempty"`
 	Labels   map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
@@ -63,11 +64,32 @@ type Consumer struct {
 }
 
 type ConsumerPlugins struct {
-	KeyAuth KeyAuthCredential `json:"key-auth,omitempty" yaml:"key-auth,omitempty"`
+	KeyAuth   *KeyAuthCredential   `json:"key-auth,omitempty" yaml:"key-auth,omitempty"`
+	BasicAuth *BasicAuthCredential `json:"basic-auth,omitempty" yaml:"basic-auth,omitempty"`
+	HmacAuth  *HmacAuthCredential  `json:"hmac-auth,omitempty" yaml:"hmac-auth,omitempty"`
+	JwtAuth   *JwtSecrets          `json:"jwt-auth,omitempty" yaml:"jwt-auth,omitempty"`
 }
 
 type KeyAuthCredential struct {
 	Key string `json:"key,omitempty" yaml:"key,omitempty"`
+}
+
+type BasicAuthCredential struct {
+	Username string `json:"username,omitempty" yaml:"username,omitempty"`
+	Password string `json:"password,omitempty" yaml:"password,omitempty"`
+}
+
+type HmacAuthCredential struct {
+	AccessKey     string   `json:"access_key,omitempty" yaml:"access_key,omitempty"`
+	SecretKey     string   `json:"secret_key,omitempty" yaml:"secret_key,omitempty"`
+	ClockSkew     string   `json:"clock_skew,omitempty" yaml:"clock_skew,omitempty"`
+	SignedHeaders []string `json:"signed_headers,omitempty" yaml:"signed_headers,omitempty"`
+}
+
+type JwtSecrets struct {
+	Key       string `json:"key,omitempty" yaml:"key,omitempty"`
+	Secret    string `json:"secret,omitempty" yaml:"secret,omitempty"`
+	Algorithm string `json:"algorithm,omitempty" yaml:"algorithm,omitempty"`
 }
 
 type Consumers []Consumer

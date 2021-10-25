@@ -2,28 +2,43 @@ package kong
 
 import (
 	"github.com/api7/kong-to-apisix/pkg/apisix"
-	"github.com/api7/kong-to-apisix/pkg/utils"
+	uuid "github.com/satori/go.uuid"
 )
 
-func MigrateConsumer(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.Consumers, error) {
+func MigrateConsumer(kongConfig *Config, apisixConfig *apisix.Config) error {
 	kongConsumers := kongConfig.Consumers
 
-	var apisixConsumers apisix.Consumers
-	for _, c := range kongConsumers {
-		username := c.Username
-		if username == "" {
-			username = c.CustomID
+	for _, consumer := range kongConsumers {
+		username := consumer.Username
+		if len(username) <= 0 {
+			username = consumer.CustomID
 		}
-		apisixConsumer := apisix.Consumer{
-			Username: username,
+		var apisixConsumer apisix.Consumer
+		if len(consumer.ID) > 0 {
+			apisixConsumer.ID = consumer.ID
+		} else {
+			apisixConsumer.ID = uuid.NewV4().String()
+		}
+		apisixConsumer.Username = username
+
+		if len(consumer.KeyAuthCredentials) > 0 {
+			KTAUpdateApisixConsumerPlugin(&apisixConsumer, &consumer.KeyAuthCredentials[0])
 		}
 
-		// TODO: need to test then it got multiple key
-		if len(c.KeyAuthCredentials) > 0 && len(c.KeyAuthCredentials[0].Key) > 0 {
-			apisixConsumer.Plugins.KeyAuth.Key = c.KeyAuthCredentials[0].Key
+		if len(consumer.BasicAuthCredentials) > 0 {
+			KTAUpdateApisixConsumerPlugin(&apisixConsumer, &consumer.BasicAuthCredentials[0])
 		}
-		apisixConsumers = append(apisixConsumers, apisixConsumer)
+
+		if len(consumer.HmacAuthCredentials) > 0 {
+			KTAUpdateApisixConsumerPlugin(&apisixConsumer, &consumer.HmacAuthCredentials[0])
+		}
+
+		if len(consumer.JwtSecrets) > 0 {
+			KTAUpdateApisixConsumerPlugin(&apisixConsumer, &consumer.JwtSecrets[0])
+		}
+
+		apisixConfig.Consumers = append(apisixConfig.Consumers, apisixConsumer)
 	}
 
-	return apisixConsumers, nil
+	return nil
 }

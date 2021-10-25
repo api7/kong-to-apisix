@@ -1,11 +1,15 @@
 package kong
 
 type Config struct {
-	Services  Services  `json:"services,omitempty" yaml:"services,omitempty"`
-	Consumers Consumers `json:"consumers,omitempty" yaml:"consumers,omitempty"`
-	Plugins   Plugins   `json:"plugins,omitempty" yaml:"plugins,omitempty"`
-	Upstreams Upstreams `json:"upstreams,omitempty" yaml:"upstreams,omitempty"`
-	Routes    Routes    `json:"routes,omitempty" yaml:"routes,omitempty"`
+	Services             Services             `json:"services,omitempty" yaml:"services,omitempty"`
+	Consumers            Consumers            `json:"consumers,omitempty" yaml:"consumers,omitempty"`
+	Plugins              Plugins              `json:"plugins,omitempty" yaml:"plugins,omitempty"`
+	Upstreams            Upstreams            `json:"upstreams,omitempty" yaml:"upstreams,omitempty"`
+	Routes               Routes               `json:"routes,omitempty" yaml:"routes,omitempty"`
+	KeyAuthCredentials   KeyAuthCredentials   `json:"keyauth_credentials,omitempty" yaml:"keyauth_credentials,omitempty"`
+	BasicAuthCredentials BasicAuthCredentials `json:"basicauth_credentials,omitempty" yaml:"basicauth_credentials,omitempty"`
+	HmacAuthCredentials  HmacAuthCredentials  `json:"hmacauth_credentials,omitempty" yaml:"hmacauth_credentials,omitempty"`
+	JwtSecrets           JwtSecrets           `json:"jwt_secrets,omitempty" yaml:"jwt_secrets,omitempty"`
 }
 
 // Common Configuration
@@ -40,6 +44,7 @@ type Service struct {
 	CACertificates    []string    `json:"ca_certificates,omitempty" yaml:"ca_certificates,omitempty"`
 	URL               string      `json:"url,omitempty" yaml:"url,omitempty"`
 	Routes            Routes      `json:"routes,omitempty" yaml:"routes,omitempty"`
+	Plugins           Plugins     `json:"plugins,omitempty" yaml:"plugins,omitempty"`
 }
 
 type Services []Service
@@ -74,13 +79,20 @@ type Routes []Route
 
 // Consumer Configuration
 
+type ConsumerAuthBaseIDs struct {
+	ID         string `json:"id,omitempty" yaml:"id,omitempty"`
+	ConsumerID string `json:"consumer,omitempty" yaml:"consumer,omitempty"`
+}
+
 type KeyAuthCredential struct {
+	ConsumerAuthBaseIDs
 	Key string `json:"key,omitempty" yaml:"key,omitempty"`
 }
 
 type KeyAuthCredentials []KeyAuthCredential
 
 type BasicAuthCredential struct {
+	ConsumerAuthBaseIDs
 	Username string `json:"username,omitempty" yaml:"username,omitempty"`
 	Password string `json:"password,omitempty" yaml:"password,omitempty"`
 }
@@ -88,6 +100,7 @@ type BasicAuthCredential struct {
 type BasicAuthCredentials []BasicAuthCredential
 
 type HmacAuthCredential struct {
+	ConsumerAuthBaseIDs
 	Username string `json:"username,omitempty" yaml:"username,omitempty"`
 	Secret   string `json:"secret,omitempty" yaml:"secret,omitempty"`
 }
@@ -95,6 +108,7 @@ type HmacAuthCredential struct {
 type HmacAuthCredentials []HmacAuthCredential
 
 type JwtSecret struct {
+	ConsumerAuthBaseIDs
 	Algorithm string `json:"algorithm,omitempty" yaml:"algorithm,omitempty"`
 	Key       string `json:"key,omitempty" yaml:"key,omitempty"`
 	Secret    string `json:"secret,omitempty" yaml:"secret,omitempty"`

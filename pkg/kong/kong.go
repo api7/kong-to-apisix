@@ -29,13 +29,19 @@ func Migrate(kongConfig *Config) (*apisix.Config, *[]utils.YamlItem, error) {
 		apisixConfig.Routes = routes
 	}
 
-	if consumers, err := MigrateConsumer(kongConfig, &configYamlAll); err != nil {
+	if err := MigrateConsumer(kongConfig, apisixConfig); err != nil {
 		return nil, nil, err
-	} else {
-		apisixConfig.Consumers = consumers
+	}
+
+	if err := MigratePlugins(kongConfig, apisixConfig); err != nil {
+		return nil, nil, err
 	}
 
 	if err := MigrateGlobalRules(kongConfig, apisixConfig); err != nil {
+		return nil, nil, err
+	}
+
+	if err := AfterMigrate(apisixConfig); err != nil {
 		return nil, nil, err
 	}
 

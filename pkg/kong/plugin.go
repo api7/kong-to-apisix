@@ -1,7 +1,12 @@
 package kong
 
 import (
+	"fmt"
+	"reflect"
+
 	"github.com/api7/kong-to-apisix/pkg/apisix"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 const PluginKeyAuth = "key-auth"
@@ -9,6 +14,126 @@ const PluginRateLimiting = "rate-limiting"
 const PluginRateLimitingPolicyLocal = "local"
 const PluginRateLimitingPolicyRedis = "redis"
 const PluginProxyCache = "proxy-cache"
+
+// MigratePlugins This function is only called when the data exported by kong config is used
+func MigratePlugins(kongConfig *Config, apisixConfig *apisix.Config) error {
+	kongPlugins := kongConfig.Plugins
+	for _, kongPlugin := range kongPlugins {
+		if len(kongPlugin.ID) <= 0 {
+			kongPlugin.ID = uuid.NewV4().String()
+		}
+
+		// If the current plugin is a global plugin, skip
+		if KTAIsKongGlobalPlugin(kongPlugin) {
+			continue
+		}
+
+		if !kongPlugin.Enabled {
+			fmt.Printf("Kong plugin %s [ %s ] is disabled\n", kongPlugin.Name,
+				kongPlugin.ID)
+			continue
+		}
+
+		if len(kongPlugin.ServiceID) > 0 {
+			for index, apisixService := range apisixConfig.Services {
+				if apisixService.ID == kongPlugin.ServiceID {
+					KTAUpdateApisixServicePlugin(&apisixConfig.Services[index], &kongPlugin)
+					break
+				}
+			}
+		}
+
+		if len(kongPlugin.RouteID) > 0 {
+			for index, apisixRoute := range apisixConfig.Routes {
+				if apisixRoute.ID == kongPlugin.RouteID {
+					KTAUpdateApisixRoutePlugin(&apisixConfig.Routes[index], &kongPlugin)
+					break
+				}
+			}
+		}
+	}
+
+	apisixConsumers := apisixConfig.Consumers
+	for index, apisixConsumer := range apisixConsumers {
+		for _, keyAuthCredential := range kongConfig.KeyAuthCredentials {
+			if apisixConsumer.ID == keyAuthCredential.ConsumerID {
+				KTAUpdateApisixConsumerPlugin(&apisixConfig.Consumers[index], &keyAuthCredential)
+				break
+			}
+		}
+
+		for _, basicAuthCredential := range kongConfig.BasicAuthCredentials {
+			if apisixConsumer.ID == basicAuthCredential.ConsumerID {
+				KTAUpdateApisixConsumerPlugin(&apisixConfig.Consumers[index], &basicAuthCredential)
+				break
+			}
+		}
+
+		for _, hmacAuthCredential := range kongConfig.HmacAuthCredentials {
+			if apisixConsumer.ID == hmacAuthCredential.ConsumerID {
+				KTAUpdateApisixConsumerPlugin(&apisixConfig.Consumers[index], &hmacAuthCredential)
+				break
+			}
+		}
+
+		for _, jwtSecret := range kongConfig.JwtSecrets {
+			if apisixConsumer.ID == jwtSecret.ConsumerID {
+				KTAUpdateApisixConsumerPlugin(&apisixConfig.Consumers[index], &jwtSecret)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+func KTAUpdateApisixServicePlugin(apisixService *apisix.Service, kongPlugin *Plugin) {
+	switch kongPlugin.Name {
+	case PluginKeyAuth:
+		apisixService.Plugins.KeyAuth = KTAConversionKongPluginKeyAuth(*kongPlugin)
+	case PluginProxyCache:
+		apisixService.Plugins.ProxyCache = KTAConversionKongPluginProxyCache(*kongPlugin)
+	case PluginRateLimiting:
+		apisixService.Plugins.LimitCount = KTAConversionKongPluginRateLimiting(*kongPlugin)
+	default:
+		fmt.Printf("Kong service [%s] plugin %s not supported by apisix yet\n",
+			apisixService.ID, kongPlugin.Name)
+	}
+}
+
+func KTAUpdateApisixRoutePlugin(apisixRoute *apisix.Route, kongPlugin *Plugin) {
+	switch kongPlugin.Name {
+	case PluginKeyAuth:
+		apisixRoute.Plugins.KeyAuth = KTAConversionKongPluginKeyAuth(*kongPlugin)
+	case PluginProxyCache:
+		apisixRoute.Plugins.ProxyCache = KTAConversionKongPluginProxyCache(*kongPlugin)
+	case PluginRateLimiting:
+		apisixRoute.Plugins.LimitCount = KTAConversionKongPluginRateLimiting(*kongPlugin)
+	default:
+		fmt.Printf("Kong route [%s] plugin %s not supported by apisix yet\n",
+			apisixRoute.ID, kongPlugin.Name)
+	}
+}
+
+func KTAUpdateApisixConsumerPlugin(apisixConsumer *apisix.Consumer, kongPlugin interface{}) {
+	switch reflect.TypeOf(kongPlugin) {
+	case reflect.TypeOf(&KeyAuthCredential{}):
+		apisixConsumer.Plugins.KeyAuth =
+			KTAConversionKongConsumerPluginKeyAuthCredential(*kongPlugin.(*KeyAuthCredential))
+	case reflect.TypeOf(&BasicAuthCredential{}):
+		apisixConsumer.Plugins.BasicAuth =
+			KTAConversionKongConsumerPluginBasicAuthCredential(*kongPlugin.(*BasicAuthCredential))
+	case reflect.TypeOf(&HmacAuthCredential{}):
+		apisixConsumer.Plugins.HmacAuth =
+			KTAConversionKongConsumerPluginHmacAuthCredential(*kongPlugin.(*HmacAuthCredential))
+	case reflect.TypeOf(&JwtSecret{}):
+		apisixConsumer.Plugins.JwtAuth =
+			KTAConversionKongConsumerPluginJwtSecrets(*kongPlugin.(*JwtSecret))
+	default:
+		fmt.Printf("Kong consumer route [%s] plugin %s not supported by apisix yet\n",
+			apisixConsumer.ID, reflect.TypeOf(kongPlugin).Elem().Name())
+	}
+}
 
 func KTAIsKongGlobalPlugin(kongPlugin Plugin) bool {
 	return len(kongPlugin.ServiceID) <= 0 && len(kongPlugin.RouteID) <= 0 && len(kongPlugin.ConsumerID) <= 0
@@ -22,7 +147,7 @@ func KTAConversionKongPluginKeyAuth(kongPlugin Plugin) *apisix.KeyAuth {
 	}
 	if len(keyName) > 0 {
 		var apisixKeyAuth apisix.KeyAuth
-		//apisixKeyAuth.Header = keyName
+		apisixKeyAuth.Header = keyName
 		//apisixKeyAuth.Query = keyName
 		return &apisixKeyAuth
 	}
@@ -129,4 +254,46 @@ func KTAConversionKongPluginProxyCache(kongPlugin Plugin) *apisix.ProxyCache {
 		apisixProxyCache.CacheHttpStatus = cacheHttpStatus
 	}
 	return &apisixProxyCache
+}
+
+func KTAConversionKongConsumerPluginKeyAuthCredential(credential KeyAuthCredential) *apisix.KeyAuthCredential {
+	if len(credential.Key) > 0 {
+		var apisixKeyAuthCredential apisix.KeyAuthCredential
+		apisixKeyAuthCredential.Key = credential.Key
+		return &apisixKeyAuthCredential
+	}
+	return nil
+}
+
+func KTAConversionKongConsumerPluginBasicAuthCredential(credential BasicAuthCredential) *apisix.BasicAuthCredential {
+	if len(credential.Username) > 0 && len(credential.Password) > 0 {
+		var apisixBasicAuthCredential apisix.BasicAuthCredential
+		apisixBasicAuthCredential.Username = credential.Username
+		apisixBasicAuthCredential.Password = credential.Password
+		return &apisixBasicAuthCredential
+	}
+	return nil
+}
+
+func KTAConversionKongConsumerPluginHmacAuthCredential(credential HmacAuthCredential) *apisix.HmacAuthCredential {
+	if len(credential.Username) > 0 && len(credential.Secret) > 0 {
+		var apisixHmacAuthCredential apisix.HmacAuthCredential
+		apisixHmacAuthCredential.AccessKey = credential.Username
+		apisixHmacAuthCredential.SecretKey = credential.Secret
+		return &apisixHmacAuthCredential
+	}
+	return nil
+}
+
+func KTAConversionKongConsumerPluginJwtSecrets(secret JwtSecret) *apisix.JwtSecrets {
+	if len(secret.Key) > 0 && len(secret.Secret) > 0 {
+		var apisixJwtSecrets apisix.JwtSecrets
+		apisixJwtSecrets.Key = secret.Key
+		apisixJwtSecrets.Secret = secret.Secret
+		if len(secret.Algorithm) > 0 {
+			apisixJwtSecrets.Algorithm = secret.Algorithm
+		}
+		return &apisixJwtSecrets
+	}
+	return nil
 }
