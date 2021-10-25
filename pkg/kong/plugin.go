@@ -37,8 +37,7 @@ func MigratePlugins(kongConfig *Config, apisixConfig *apisix.Config) error {
 		if len(kongPlugin.ServiceID) > 0 {
 			for index, apisixService := range apisixConfig.Services {
 				if apisixService.ID == kongPlugin.ServiceID {
-					KTAUpdateApisixServicePlugin(&apisixService, &kongPlugin)
-					apisixConfig.Services[index] = apisixService
+					KTAUpdateApisixServicePlugin(&apisixConfig.Services[index], &kongPlugin)
 					break
 				}
 			}
@@ -47,8 +46,7 @@ func MigratePlugins(kongConfig *Config, apisixConfig *apisix.Config) error {
 		if len(kongPlugin.RouteID) > 0 {
 			for index, apisixRoute := range apisixConfig.Routes {
 				if apisixRoute.ID == kongPlugin.RouteID {
-					KTAUpdateApisixRoutePlugin(&apisixRoute, &kongPlugin)
-					apisixConfig.Routes[index] = apisixRoute
+					KTAUpdateApisixRoutePlugin(&apisixConfig.Routes[index], &kongPlugin)
 					break
 				}
 			}
@@ -59,32 +57,28 @@ func MigratePlugins(kongConfig *Config, apisixConfig *apisix.Config) error {
 	for index, apisixConsumer := range apisixConsumers {
 		for _, keyAuthCredential := range kongConfig.KeyAuthCredentials {
 			if apisixConsumer.ID == keyAuthCredential.ConsumerID {
-				KTAUpdateApisixConsumerPlugin(&apisixConsumer, &keyAuthCredential)
-				apisixConfig.Consumers[index] = apisixConsumer
+				KTAUpdateApisixConsumerPlugin(&apisixConfig.Consumers[index], &keyAuthCredential)
 				break
 			}
 		}
 
 		for _, basicAuthCredential := range kongConfig.BasicAuthCredentials {
 			if apisixConsumer.ID == basicAuthCredential.ConsumerID {
-				KTAUpdateApisixConsumerPlugin(&apisixConsumer, &basicAuthCredential)
-				apisixConfig.Consumers[index] = apisixConsumer
+				KTAUpdateApisixConsumerPlugin(&apisixConfig.Consumers[index], &basicAuthCredential)
 				break
 			}
 		}
 
 		for _, hmacAuthCredential := range kongConfig.HmacAuthCredentials {
 			if apisixConsumer.ID == hmacAuthCredential.ConsumerID {
-				KTAUpdateApisixConsumerPlugin(&apisixConsumer, &hmacAuthCredential)
-				apisixConfig.Consumers[index] = apisixConsumer
+				KTAUpdateApisixConsumerPlugin(&apisixConfig.Consumers[index], &hmacAuthCredential)
 				break
 			}
 		}
 
 		for _, jwtSecret := range kongConfig.JwtSecrets {
 			if apisixConsumer.ID == jwtSecret.ConsumerID {
-				KTAUpdateApisixConsumerPlugin(&apisixConsumer, &jwtSecret)
-				apisixConfig.Consumers[index] = apisixConsumer
+				KTAUpdateApisixConsumerPlugin(&apisixConfig.Consumers[index], &jwtSecret)
 				break
 			}
 		}

@@ -70,30 +70,38 @@ func TestMigratePlugins(t *testing.T) {
 
 	kongConfig.KeyAuthCredentials = KeyAuthCredentials{
 		{
-			Key:        "test",
-			ConsumerID: consumerId,
+			ConsumerAuthBaseIDs: ConsumerAuthBaseIDs{
+				ConsumerID: consumerId,
+			},
+			Key: "test",
 		},
 	}
 	kongConfig.BasicAuthCredentials = BasicAuthCredentials{
 		{
-			Username:   "test",
-			Password:   "123456",
-			ConsumerID: consumerId,
+			Username: "test",
+			Password: "123456",
+			ConsumerAuthBaseIDs: ConsumerAuthBaseIDs{
+				ConsumerID: consumerId,
+			},
 		},
 	}
 	kongConfig.HmacAuthCredentials = HmacAuthCredentials{
 		{
-			Username:   "test",
-			Secret:     "123456",
-			ConsumerID: consumerId,
+			Username: "test",
+			Secret:   "123456",
+			ConsumerAuthBaseIDs: ConsumerAuthBaseIDs{
+				ConsumerID: consumerId,
+			},
 		},
 	}
 	kongConfig.JwtSecrets = JwtSecrets{
 		{
-			Key:        "test",
-			Secret:     "123456",
-			Algorithm:  "HS256",
-			ConsumerID: consumerId,
+			Key:       "test",
+			Secret:    "123456",
+			Algorithm: "HS256",
+			ConsumerAuthBaseIDs: ConsumerAuthBaseIDs{
+				ConsumerID: consumerId,
+			},
 		},
 	}
 

@@ -79,38 +79,39 @@ type Routes []Route
 
 // Consumer Configuration
 
-type KeyAuthCredential struct {
+type ConsumerAuthBaseIDs struct {
 	ID         string `json:"id,omitempty" yaml:"id,omitempty"`
 	ConsumerID string `json:"consumer,omitempty" yaml:"consumer,omitempty"`
-	Key        string `json:"key,omitempty" yaml:"key,omitempty"`
+}
+
+type KeyAuthCredential struct {
+	ConsumerAuthBaseIDs
+	Key string `json:"key,omitempty" yaml:"key,omitempty"`
 }
 
 type KeyAuthCredentials []KeyAuthCredential
 
 type BasicAuthCredential struct {
-	ID         string `json:"id,omitempty" yaml:"id,omitempty"`
-	ConsumerID string `json:"consumer,omitempty" yaml:"consumer,omitempty"`
-	Username   string `json:"username,omitempty" yaml:"username,omitempty"`
-	Password   string `json:"password,omitempty" yaml:"password,omitempty"`
+	ConsumerAuthBaseIDs
+	Username string `json:"username,omitempty" yaml:"username,omitempty"`
+	Password string `json:"password,omitempty" yaml:"password,omitempty"`
 }
 
 type BasicAuthCredentials []BasicAuthCredential
 
 type HmacAuthCredential struct {
-	ID         string `json:"id,omitempty" yaml:"id,omitempty"`
-	ConsumerID string `json:"consumer,omitempty" yaml:"consumer,omitempty"`
-	Username   string `json:"username,omitempty" yaml:"username,omitempty"`
-	Secret     string `json:"secret,omitempty" yaml:"secret,omitempty"`
+	ConsumerAuthBaseIDs
+	Username string `json:"username,omitempty" yaml:"username,omitempty"`
+	Secret   string `json:"secret,omitempty" yaml:"secret,omitempty"`
 }
 
 type HmacAuthCredentials []HmacAuthCredential
 
 type JwtSecret struct {
-	ID         string `json:"id,omitempty" yaml:"id,omitempty"`
-	ConsumerID string `json:"consumer,omitempty" yaml:"consumer,omitempty"`
-	Algorithm  string `json:"algorithm,omitempty" yaml:"algorithm,omitempty"`
-	Key        string `json:"key,omitempty" yaml:"key,omitempty"`
-	Secret     string `json:"secret,omitempty" yaml:"secret,omitempty"`
+	ConsumerAuthBaseIDs
+	Algorithm string `json:"algorithm,omitempty" yaml:"algorithm,omitempty"`
+	Key       string `json:"key,omitempty" yaml:"key,omitempty"`
+	Secret    string `json:"secret,omitempty" yaml:"secret,omitempty"`
 }
 
 type JwtSecrets []JwtSecret
