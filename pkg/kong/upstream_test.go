@@ -25,6 +25,11 @@ type TestUpstream struct {
 	Expect   TestUpstreamExpect
 }
 
+type TestFormatTarget struct {
+	Hostname string
+	Expect   A6UpstreamNodeHostPort
+}
+
 func TestMigrateUpstream(t *testing.T) {
 	var kongConfig Config
 	var apisixConfig apisix.Config
@@ -105,5 +110,59 @@ func TestMigrateUpstream(t *testing.T) {
 		assert.Equal(t, apisixConfig.Upstreams[1].Nodes[0].Host, testUpstream.Expect.Host)
 		assert.Equal(t, apisixConfig.Upstreams[1].Nodes[0].Port, testUpstream.Expect.Port)
 		assert.Equal(t, apisixConfig.Upstreams[1].Nodes[0].Weight, testUpstream.Expect.Weight)
+	}
+}
+
+func TestKTAFormatKongTarget(t *testing.T) {
+	testTargets := []TestFormatTarget{
+		{
+			Hostname: "valid.name",
+			Expect: A6UpstreamNodeHostPort{
+				Host: "valid.name",
+				Port: 80,
+			},
+		},
+		{
+			Hostname: "valid.name:8080",
+			Expect: A6UpstreamNodeHostPort{
+				Host: "valid.name",
+				Port: 8080,
+			},
+		},
+		{
+			Hostname: "12.34.56.78",
+			Expect: A6UpstreamNodeHostPort{
+				Host: "12.34.56.78",
+				Port: 80,
+			},
+		},
+		{
+			Hostname: "1.2.3.4:123",
+			Expect: A6UpstreamNodeHostPort{
+				Host: "1.2.3.4",
+				Port: 123,
+			},
+		},
+		{
+			Hostname: "[A01F::0]:8000",
+			Expect: A6UpstreamNodeHostPort{
+				Host: "A01F::0",
+				Port: 8000,
+			},
+		},
+		{
+			Hostname: "[A01F::0]",
+			Expect: A6UpstreamNodeHostPort{
+				Host: "A01F::0",
+				Port: 80,
+			},
+		},
+	}
+
+	for _, testTarget := range testTargets {
+		a6NodeHostPort, err := KTAFormatKongTarget(testTarget.Hostname)
+		assert.NoError(t, err)
+		assert.Equal(t, testTarget.Expect.Host, a6NodeHostPort.Host)
+		assert.Equal(t, testTarget.Expect.Port, a6NodeHostPort.Port)
 	}
 }

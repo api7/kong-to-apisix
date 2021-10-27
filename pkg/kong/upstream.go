@@ -2,8 +2,9 @@ package kong
 
 import (
 	"fmt"
+	"net"
+	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/api7/kong-to-apisix/pkg/apisix"
 
@@ -17,7 +18,12 @@ const KTAKongUpstreamAlgorithmRoundRobin = "round-robin"
 const KTAKongUpstreamAlgorithmConsistentHashing = "consistent-hashing"
 const KTAKongUpstreamAlgorithmLeastConnections = "least-connections"
 
-type SixServiceUpstreamMapping struct {
+type A6UpstreamNodeHostPort struct {
+	Host string
+	Port int
+}
+
+type A6ServiceUpstreamMapping struct {
 	ServiceId  string
 	UpstreamId string
 }
@@ -25,7 +31,7 @@ type SixServiceUpstreamMapping struct {
 func MigrateUpstream(kongConfig *Config, apisixConfig *apisix.Config) error {
 	kongServices := kongConfig.Services
 	kongUpstreams := kongConfig.Upstreams
-	var sixServiceUpstreamMappings []SixServiceUpstreamMapping
+	var a6ServiceUpstreamMappings []A6ServiceUpstreamMapping
 	for index, kongUpstream := range kongUpstreams {
 		kongUpstreamId := kongUpstream.ID
 		if len(kongUpstreamId) <= 0 {
@@ -33,7 +39,7 @@ func MigrateUpstream(kongConfig *Config, apisixConfig *apisix.Config) error {
 			kongConfig.Upstreams[index].ID = kongUpstreamId
 		}
 
-		var sixServiceUpstreamMapping SixServiceUpstreamMapping
+		var a6ServiceUpstreamMapping A6ServiceUpstreamMapping
 		var apisixUpstream apisix.Upstream
 
 		apisixUpstream.ID = kongUpstreamId
@@ -67,15 +73,15 @@ func MigrateUpstream(kongConfig *Config, apisixConfig *apisix.Config) error {
 		apisixUpstream.Timeout.Send = KTAConversionKongUpstreamTimeout(service.WriteTimeout)
 		apisixUpstream.Timeout.Read = KTAConversionKongUpstreamTimeout(service.ReadTimeout)
 		apisixConfig.Upstreams = append(apisixConfig.Upstreams, apisixUpstream)
-		sixServiceUpstreamMapping.ServiceId = service.ID
-		sixServiceUpstreamMapping.UpstreamId = apisixUpstream.ID
-		sixServiceUpstreamMappings = append(sixServiceUpstreamMappings, sixServiceUpstreamMapping)
+		a6ServiceUpstreamMapping.ServiceId = service.ID
+		a6ServiceUpstreamMapping.UpstreamId = apisixUpstream.ID
+		a6ServiceUpstreamMappings = append(a6ServiceUpstreamMappings, a6ServiceUpstreamMapping)
 		fmt.Printf("Kong upstream [ %s ] to APISIX conversion completed\n", apisixUpstream.ID)
 	}
 
 	// remapping service and upstream
 	for serviceIndex, service := range apisixConfig.Services {
-		for _, mapping := range sixServiceUpstreamMappings {
+		for _, mapping := range a6ServiceUpstreamMappings {
 			if service.ID == mapping.ServiceId {
 				apisixConfig.Services[serviceIndex].UpstreamID = mapping.UpstreamId
 				break
@@ -105,27 +111,38 @@ func KTAConversionKongUpstreamTargets(kongTargets Targets, kongUpstreamId string
 		}
 	}
 
-	var sixUpstreamNodes apisix.UpstreamNodes
+	var a6UpstreamNodes apisix.UpstreamNodes
 	for _, target := range targets {
-		var sixUpstreamNode apisix.UpstreamNode
-		targetResponse := strings.Split(target.Target, ":")
-		switch len(targetResponse) {
-		case 1:
-			sixUpstreamNode.Host = targetResponse[0]
-			sixUpstreamNode.Port = 80
-			sixUpstreamNode.Weight = target.Weight
-		case 2:
-			port, err := strconv.Atoi(targetResponse[1])
-			if err != nil {
-				continue
-			}
-			sixUpstreamNode.Host = targetResponse[0]
-			sixUpstreamNode.Port = port
-			sixUpstreamNode.Weight = target.Weight
-		default:
+		var a6UpstreamNode apisix.UpstreamNode
+		a6NodeHostPort, err := KTAFormatKongTarget(target.Target)
+		if a6NodeHostPort == nil {
+			fmt.Printf("Kong upstream [ %s ] target [ %s ] conversion failure, %s\n",
+				kongUpstreamId, target.Target, err)
 			continue
 		}
-		sixUpstreamNodes = append(sixUpstreamNodes, sixUpstreamNode)
+		a6UpstreamNode.Host = a6NodeHostPort.Host
+		a6UpstreamNode.Port = a6NodeHostPort.Port
+		a6UpstreamNode.Weight = target.Weight
+		a6UpstreamNodes = append(a6UpstreamNodes, a6UpstreamNode)
 	}
-	return sixUpstreamNodes
+	return a6UpstreamNodes
+}
+
+func KTAFormatKongTarget(kongTarget string) (*A6UpstreamNodeHostPort, error) {
+	reg := regexp.MustCompile(`\:([1-9]|[1-5]?[0-9]{2,4}|6[1-4][0-9]{3}|65[1-4][0-9]{2}|655[1-2][0-9]|6553[1-5])$`)
+	if len(reg.FindAllString(kongTarget, -1)) < 1 {
+		kongTarget = kongTarget + ":" + strconv.Itoa(80)
+	}
+	host, port, err := net.SplitHostPort(kongTarget)
+	if err != nil {
+		return nil, err
+	}
+	portNumber, err := strconv.Atoi(port)
+	if err != nil {
+		return nil, err
+	}
+	var a6UpstreamNodeHostPort A6UpstreamNodeHostPort
+	a6UpstreamNodeHostPort.Host = host
+	a6UpstreamNodeHostPort.Port = portNumber
+	return &a6UpstreamNodeHostPort, nil
 }
