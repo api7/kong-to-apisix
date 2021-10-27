@@ -2,95 +2,130 @@ package kong
 
 import (
 	"fmt"
-	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/api7/kong-to-apisix/pkg/apisix"
-	"github.com/api7/kong-to-apisix/pkg/utils"
 
-	"github.com/pkg/errors"
+	uuid "github.com/satori/go.uuid"
 )
 
-func MigrateUpstream(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.Upstreams, error) {
-	kongUpstreams := kongConfig.Upstreams
+const KTASixUpstreamAlgorithmRoundRobin = "roundrobin"
+const KTASixUpstreamAlgorithmConsistentHashing = "chash"
+const KTASixUpstreamAlgorithmLeastConnections = "least_conn"
+const KTAKongUpstreamAlgorithmRoundRobin = "round-robin"
+const KTAKongUpstreamAlgorithmConsistentHashing = "consistent-hashing"
+const KTAKongUpstreamAlgorithmLeastConnections = "least-connections"
+
+type SixServiceUpstreamMapping struct {
+	ServiceId  string
+	UpstreamId string
+}
+
+func MigrateUpstream(kongConfig *Config, apisixConfig *apisix.Config) error {
 	kongServices := kongConfig.Services
-	upstreamsMap := make(map[string]Upstream)
-	for _, u := range kongUpstreams {
-		upstreamsMap[u.Name] = u
-	}
-
-	var apisixUpstreams apisix.Upstreams
-	for i, s := range kongServices {
-		kongConfig.Services[i].ID = strconv.Itoa(i)
-		// TODO: gokong not support lbAlgorithm yet
-		apisixUpstream := &apisix.Upstream{
-			ID:      strconv.Itoa(i),
-			Type:    "roundrobin",
-			Scheme:  s.Protocol,
-			Retries: uint(s.Retries),
-			Timeout: apisix.UpstreamTimeout{
-				Connect: float32(s.ConnectTimeout) / float32(1000),
-				Send:    float32(s.WriteTimeout) / float32(1000),
-				Read:    float32(s.ReadTimeout) / float32(1000),
-			},
+	kongUpstreams := kongConfig.Upstreams
+	var sixServiceUpstreamMappings []SixServiceUpstreamMapping
+	for index, kongUpstream := range kongUpstreams {
+		kongUpstreamId := kongUpstream.ID
+		if len(kongUpstreamId) <= 0 {
+			kongUpstreamId = uuid.NewV4().String()
+			kongConfig.Upstreams[index].ID = kongUpstreamId
 		}
 
-		if s.Name != "" {
-			apisixUpstream.Name = s.Name
+		var sixServiceUpstreamMapping SixServiceUpstreamMapping
+		var apisixUpstream apisix.Upstream
+
+		apisixUpstream.ID = kongUpstreamId
+		apisixUpstream.Name = kongUpstream.Name
+		switch kongUpstream.Algorithm {
+		case KTAKongUpstreamAlgorithmRoundRobin:
+			apisixUpstream.Type = KTASixUpstreamAlgorithmRoundRobin
+		case KTAKongUpstreamAlgorithmConsistentHashing:
+			apisixUpstream.Type = KTASixUpstreamAlgorithmConsistentHashing
+		case KTAKongUpstreamAlgorithmLeastConnections:
+			apisixUpstream.Type = KTASixUpstreamAlgorithmLeastConnections
 		}
-
-		var upstreamNodes []apisix.UpstreamNode
-
-		// if service is bind to upstream
-		if upstream, ok := upstreamsMap[s.Host]; ok {
-			apisixUpstream.HashOn = upstream.HashOn
-			switch upstream.HashOn {
-			case "none":
-				apisixUpstream.HashOn = "vars"
-			case "ip":
-				fmt.Println("upstream hashon parameter `ip` not supported in apisix")
-				apisixUpstream.HashOn = "vars"
-			default:
-				apisixUpstream.HashOn = upstream.HashOn
-			}
-
-			targets := upstream.Targets
-
-			for _, t := range targets {
-				u, err := url.Parse(t.Target)
-				if err != nil && !strings.Contains(err.Error(), "first path segment in URL cannot contain colon") {
-					return nil, errors.Wrap(err, "url parse")
-				}
-
-				if u == nil || u.Host == "" {
-					u, err = url.ParseRequestURI("http://" + t.Target)
-					if err != nil {
-						return nil, err
-					}
-				}
-
-				port, err := strconv.Atoi(u.Port())
-				if err != nil {
-					return nil, err
-				}
-				upstreamNodes = append(upstreamNodes, apisix.UpstreamNode{
-					Host:   u.Hostname(),
-					Port:   port,
-					Weight: t.Weight,
-				})
-			}
+		if len(kongUpstream.Targets) > 0 {
+			// kong deck export
+			apisixUpstream.Nodes = KTAConversionKongUpstreamTargets(kongUpstream.Targets, "")
 		} else {
-			upstreamNodes = []apisix.UpstreamNode{{
-				Host:   s.Host,
-				Port:   s.Port,
-				Weight: 1,
-			}}
+			// kong config export
+			apisixUpstream.Nodes = KTAConversionKongUpstreamTargets(kongConfig.Targets, kongUpstreamId)
 		}
 
-		apisixUpstream.Nodes = upstreamNodes
-		apisixUpstreams = append(apisixUpstreams, *apisixUpstream)
+		service, err := FindKongServiceByHost(&kongServices, kongUpstream.Name)
+		if err != nil || service == nil {
+			apisixConfig.Upstreams = append(apisixConfig.Upstreams, apisixUpstream)
+			fmt.Printf("Kong upstream [ %s ] mapping service not found\n", kongUpstreamId)
+			continue
+		}
+
+		apisixUpstream.Retries = service.Retries
+		apisixUpstream.Scheme = service.Protocol
+		apisixUpstream.Timeout.Connect = KTAConversionKongUpstreamTimeout(service.ConnectTimeout)
+		apisixUpstream.Timeout.Send = KTAConversionKongUpstreamTimeout(service.WriteTimeout)
+		apisixUpstream.Timeout.Read = KTAConversionKongUpstreamTimeout(service.ReadTimeout)
+		apisixConfig.Upstreams = append(apisixConfig.Upstreams, apisixUpstream)
+		sixServiceUpstreamMapping.ServiceId = service.ID
+		sixServiceUpstreamMapping.UpstreamId = apisixUpstream.ID
+		sixServiceUpstreamMappings = append(sixServiceUpstreamMappings, sixServiceUpstreamMapping)
+		fmt.Printf("Kong upstream [ %s ] to APISIX conversion completed\n", apisixUpstream.ID)
 	}
 
-	return apisixUpstreams, nil
+	// remapping service and upstream
+	for serviceIndex, service := range apisixConfig.Services {
+		for _, mapping := range sixServiceUpstreamMappings {
+			if service.ID == mapping.ServiceId {
+				apisixConfig.Services[serviceIndex].UpstreamID = mapping.UpstreamId
+				break
+			}
+		}
+	}
+
+	fmt.Println("Kong to APISIX upstreams configuration conversion completed")
+	return nil
+}
+
+func KTAConversionKongUpstreamTimeout(kongTime uint) float32 {
+	return float32(kongTime) / float32(1000)
+}
+
+func KTAConversionKongUpstreamTargets(kongTargets Targets, kongUpstreamId string) apisix.UpstreamNodes {
+	var targets Targets
+	if len(kongUpstreamId) <= 0 {
+		// kong deck export
+		targets = kongTargets
+	} else {
+		// kong config export
+		for _, target := range kongTargets {
+			if target.UpstreamID == kongUpstreamId {
+				targets = append(targets, target)
+			}
+		}
+	}
+
+	var sixUpstreamNodes apisix.UpstreamNodes
+	for _, target := range targets {
+		var sixUpstreamNode apisix.UpstreamNode
+		targetResponse := strings.Split(target.Target, ":")
+		switch len(targetResponse) {
+		case 1:
+			sixUpstreamNode.Host = targetResponse[0]
+			sixUpstreamNode.Port = 80
+			sixUpstreamNode.Weight = target.Weight
+		case 2:
+			port, err := strconv.Atoi(targetResponse[1])
+			if err != nil {
+				continue
+			}
+			sixUpstreamNode.Host = targetResponse[0]
+			sixUpstreamNode.Port = port
+			sixUpstreamNode.Weight = target.Weight
+		default:
+			continue
+		}
+		sixUpstreamNodes = append(sixUpstreamNodes, sixUpstreamNode)
+	}
+	return sixUpstreamNodes
 }

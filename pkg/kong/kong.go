@@ -17,10 +17,8 @@ func Migrate(kongConfig *Config) (*apisix.Config, *[]utils.YamlItem, error) {
 		return nil, nil, err
 	}
 
-	if upstreams, err := MigrateUpstream(kongConfig, &configYamlAll); err != nil {
+	if err := MigrateUpstream(kongConfig, apisixConfig); err != nil {
 		return nil, nil, err
-	} else {
-		apisixConfig.Upstreams = upstreams
 	}
 
 	if routes, err := MigrateRoute(kongConfig, &configYamlAll); err != nil {
