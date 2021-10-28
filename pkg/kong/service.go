@@ -13,17 +13,21 @@ func MigrateService(kongConfig *Config, apisixConfig *apisix.Config) error {
 	kongServices := kongConfig.Services
 	apisixServices := apisixConfig.Services
 
-	for _, kongService := range kongServices {
-		if len(kongService.ID) <= 0 {
-			kongService.ID = uuid.NewV4().String()
+	for index, kongService := range kongServices {
+		kongServiceId := kongService.ID
+		if len(kongServiceId) <= 0 {
+			kongServiceId = uuid.NewV4().String()
+			kongConfig.Services[index].ID = kongServiceId
 		}
 		var apisixService apisix.Service
-		apisixService.ID = kongService.ID
+		apisixService.ID = kongServiceId
 		apisixService.Name = kongService.Name
-		upstreamID := GenerateApisixServiceUpstream(kongService, apisixConfig)
-		apisixService.UpstreamID = upstreamID
+		if len(kongService.Host) > 0 {
+			upstreamID := GenerateApisixServiceUpstream(kongService, apisixConfig)
+			apisixService.UpstreamID = upstreamID
+		}
 		apisixServices = append(apisixServices, apisixService)
-		fmt.Printf("Kong service [ %s ] to APISIX conversion completed\n", kongService.ID)
+		fmt.Printf("Kong service [ %s ] to APISIX conversion completed\n", kongServiceId)
 	}
 
 	apisixConfig.Services = apisixServices
@@ -39,7 +43,7 @@ func GenerateApisixServiceUpstream(kongService Service, apisixConfig *apisix.Con
 	} else {
 		apisixUpstream.ID = uuid.NewV4().String()
 	}
-	apisixUpstream.Type = "roundrobin"
+	apisixUpstream.Type = KTASixUpstreamAlgorithmRoundRobin
 	// apisix upstream nodes
 	var apisixUpstreamNode apisix.UpstreamNode
 	apisixUpstreamNode.Weight = 100
@@ -52,9 +56,9 @@ func GenerateApisixServiceUpstream(kongService Service, apisixConfig *apisix.Con
 	apisixUpstream.Nodes = append(apisixUpstream.Nodes, apisixUpstreamNode)
 	// apisix upstream timeout
 	var apisixUpstreamTimeout apisix.UpstreamTimeout
-	apisixUpstreamTimeout.Send = float32(kongService.WriteTimeout) / float32(1000)
-	apisixUpstreamTimeout.Read = float32(kongService.ReadTimeout) / float32(1000)
-	apisixUpstreamTimeout.Connect = float32(kongService.ConnectTimeout) / float32(1000)
+	apisixUpstreamTimeout.Send = KTAConversionKongUpstreamTimeout(kongService.WriteTimeout)
+	apisixUpstreamTimeout.Read = KTAConversionKongUpstreamTimeout(kongService.ReadTimeout)
+	apisixUpstreamTimeout.Connect = KTAConversionKongUpstreamTimeout(kongService.ConnectTimeout)
 	apisixUpstream.Timeout = apisixUpstreamTimeout
 	// apisix upstream scheme
 	apisixUpstream.Scheme = kongService.Protocol
@@ -66,7 +70,7 @@ func GenerateApisixServiceUpstream(kongService Service, apisixConfig *apisix.Con
 	return apisixUpstream.ID
 }
 
-func GetKongServiceByID(kongServices *Services, serviceID string) (*Service, error) {
+func FindKongServiceByID(kongServices *Services, serviceID string) (*Service, error) {
 	if kongServices == nil {
 		return nil, errors.New("kong services is nil or invalid")
 	}
@@ -83,9 +87,33 @@ func GetKongServiceByID(kongServices *Services, serviceID string) (*Service, err
 		}
 	}
 
-	if kongService != nil {
-		return kongService, nil
+	if kongService == nil {
+		return nil, fmt.Errorf("no service matching id /%s/ was found", serviceID)
 	}
 
-	return nil, fmt.Errorf("kong service id /%s/ not found", serviceID)
+	return kongService, nil
+}
+
+func FindKongServiceByHost(kongServices *Services, serviceHost string) (*Service, error) {
+	if kongServices == nil {
+		return nil, errors.New("kong services is nil or invalid")
+	}
+
+	if len(serviceHost) <= 0 {
+		return nil, errors.New("kong service id invalid")
+	}
+
+	var kongService *Service
+	for _, service := range *kongServices {
+		if service.Host == serviceHost {
+			kongService = &service
+			break
+		}
+	}
+
+	if kongService == nil {
+		return nil, fmt.Errorf("no service matching host /%s/ was found", serviceHost)
+	}
+
+	return kongService, nil
 }

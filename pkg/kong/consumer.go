@@ -8,17 +8,19 @@ import (
 func MigrateConsumer(kongConfig *Config, apisixConfig *apisix.Config) error {
 	kongConsumers := kongConfig.Consumers
 
-	for _, consumer := range kongConsumers {
+	for index, consumer := range kongConsumers {
+		consumerId := consumer.ID
+		if len(consumerId) <= 0 {
+			consumerId = uuid.NewV4().String()
+			kongConfig.Consumers[index].ID = consumerId
+		}
 		username := consumer.Username
 		if len(username) <= 0 {
 			username = consumer.CustomID
 		}
+
 		var apisixConsumer apisix.Consumer
-		if len(consumer.ID) > 0 {
-			apisixConsumer.ID = consumer.ID
-		} else {
-			apisixConsumer.ID = uuid.NewV4().String()
-		}
+		apisixConsumer.ID = consumerId
 		apisixConsumer.Username = username
 
 		if len(consumer.KeyAuthCredentials) > 0 {

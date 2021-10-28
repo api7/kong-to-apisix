@@ -17,8 +17,8 @@ func MigrateRoute(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.R
 		for _, r := range s.Routes {
 			i++
 			apisixRoute := &apisix.Route{
-				ID:         strconv.Itoa(i),
-				UpstreamID: s.ID,
+				ID:        strconv.Itoa(i),
+				ServiceID: s.ID,
 				// TODO: need to check if it's the same
 				Priority: uint(r.RegexPriority),
 				Plugins:  apisix.Plugins{},
