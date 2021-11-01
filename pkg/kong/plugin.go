@@ -39,6 +39,8 @@ func MigratePlugins(kongConfig *Config, apisixConfig *apisix.Config) error {
 			for index, apisixService := range apisixConfig.Services {
 				if apisixService.ID == kongPlugin.ServiceID {
 					KTAUpdateApisixServicePlugin(&apisixConfig.Services[index], &kongPlugin)
+					fmt.Printf("Kong plugin `%s` [ %s ] to APISIX service [%s] plugin conversion completed\n",
+						kongPlugin.Name, kongPluginId, apisixService.ID)
 					break
 				}
 			}
@@ -48,6 +50,8 @@ func MigratePlugins(kongConfig *Config, apisixConfig *apisix.Config) error {
 			for index, apisixRoute := range apisixConfig.Routes {
 				if apisixRoute.ID == kongPlugin.RouteID {
 					KTAUpdateApisixRoutePlugin(&apisixConfig.Routes[index], &kongPlugin)
+					fmt.Printf("Kong plugin `%s` [ %s ] to APISIX route [%s] plugin conversion completed\n",
+						kongPlugin.Name, kongPluginId, apisixRoute.ID)
 					break
 				}
 			}
@@ -85,6 +89,7 @@ func MigratePlugins(kongConfig *Config, apisixConfig *apisix.Config) error {
 		}
 	}
 
+	fmt.Println("Kong to APISIX plugins configuration conversion completed")
 	return nil
 }
 
