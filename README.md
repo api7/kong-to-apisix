@@ -2,7 +2,7 @@
 
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/api7/kong-to-apisix)](https://goreportcard.com/report/github.com/api7/kong-to-apisix)
-[![Build Status](https://github.com/api7/kong-to-apisix/actions/workflows/e2e.yml/badge.svg)](https://github.com/api7/kong-to-apisix/actions)
+[![Build Status](https://github.com/api7/kong-to-apisix/actions/workflows/e2e-test.yml/badge.svg)](https://github.com/api7/kong-to-apisix/actions)
 [![Codecov](https://codecov.io/gh/api7/kong-to-apisix/branch/master/graph/badge.svg)](https://codecov.io/gh/api7/kong-to-apisix)
 
 Kong-To-APISIX is a migration tool helping you migrate configuration data of your API gateway from Kong to Apache APISIX. It aims to help people to dip their toes in APISIX and also reduce the operations cost.
