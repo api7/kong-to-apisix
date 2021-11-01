@@ -70,7 +70,7 @@ func GenerateApisixServiceUpstream(kongService Service, apisixConfig *apisix.Con
 	return apisixUpstream.ID
 }
 
-func FindKongServiceByID(kongServices *Services, serviceID string) (*Service, error) {
+func FindKongServiceById(kongServices *Services, serviceID string) (*Service, error) {
 	if kongServices == nil {
 		return nil, errors.New("kong services is nil or invalid")
 	}

@@ -72,7 +72,7 @@ type Route struct {
 	Sources                 []CIDRPort          `json:"sources,omitempty" yaml:"sources,omitempty"`
 	Destinations            []CIDRPort          `json:"destinations,omitempty" yaml:"destinations,omitempty"`
 	Tags                    []string            `json:"tags,omitempty" yaml:"tags,omitempty"`
-	Service                 string              `json:"service,omitempty" yaml:"service,omitempty"`
+	ServiceID               string              `json:"service,omitempty" yaml:"service,omitempty"`
 	Plugins                 Plugins             `json:"plugins,omitempty" yaml:"plugins,omitempty"`
 }
 

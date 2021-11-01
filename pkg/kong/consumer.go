@@ -1,6 +1,8 @@
 package kong
 
 import (
+	"fmt"
+
 	"github.com/api7/kong-to-apisix/pkg/apisix"
 	uuid "github.com/satori/go.uuid"
 )
@@ -40,7 +42,9 @@ func MigrateConsumer(kongConfig *Config, apisixConfig *apisix.Config) error {
 		}
 
 		apisixConfig.Consumers = append(apisixConfig.Consumers, apisixConsumer)
+		fmt.Printf("Kong consumer [ %s ] to APISIX conversion completed\n", consumerId)
 	}
 
+	fmt.Println("Kong to APISIX consumers configuration conversion completed")
 	return nil
 }

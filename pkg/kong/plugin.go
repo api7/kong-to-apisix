@@ -18,9 +18,10 @@ const PluginProxyCache = "proxy-cache"
 // MigratePlugins This function is only called when the data exported by kong config is used
 func MigratePlugins(kongConfig *Config, apisixConfig *apisix.Config) error {
 	kongPlugins := kongConfig.Plugins
-	for _, kongPlugin := range kongPlugins {
-		if len(kongPlugin.ID) <= 0 {
-			kongPlugin.ID = uuid.NewV4().String()
+	for kpIndex, kongPlugin := range kongPlugins {
+		// If the current plugin disable, skip
+		if !kongPlugin.Enabled {
+			continue
 		}
 
 		// If the current plugin is a global plugin, skip
@@ -28,16 +29,18 @@ func MigratePlugins(kongConfig *Config, apisixConfig *apisix.Config) error {
 			continue
 		}
 
-		if !kongPlugin.Enabled {
-			fmt.Printf("Kong plugin %s [ %s ] is disabled\n", kongPlugin.Name,
-				kongPlugin.ID)
-			continue
+		kongPluginId := kongPlugin.ID
+		if len(kongPlugin.ID) <= 0 {
+			kongPluginId = uuid.NewV4().String()
+			kongConfig.Plugins[kpIndex].ID = kongPluginId
 		}
 
 		if len(kongPlugin.ServiceID) > 0 {
 			for index, apisixService := range apisixConfig.Services {
 				if apisixService.ID == kongPlugin.ServiceID {
 					KTAUpdateApisixServicePlugin(&apisixConfig.Services[index], &kongPlugin)
+					fmt.Printf("Kong plugin `%s` [ %s ] to APISIX service [%s] plugin conversion completed\n",
+						kongPlugin.Name, kongPluginId, apisixService.ID)
 					break
 				}
 			}
@@ -47,6 +50,8 @@ func MigratePlugins(kongConfig *Config, apisixConfig *apisix.Config) error {
 			for index, apisixRoute := range apisixConfig.Routes {
 				if apisixRoute.ID == kongPlugin.RouteID {
 					KTAUpdateApisixRoutePlugin(&apisixConfig.Routes[index], &kongPlugin)
+					fmt.Printf("Kong plugin `%s` [ %s ] to APISIX route [%s] plugin conversion completed\n",
+						kongPlugin.Name, kongPluginId, apisixRoute.ID)
 					break
 				}
 			}
@@ -84,6 +89,7 @@ func MigratePlugins(kongConfig *Config, apisixConfig *apisix.Config) error {
 		}
 	}
 
+	fmt.Println("Kong to APISIX plugins configuration conversion completed")
 	return nil
 }
 
@@ -148,7 +154,7 @@ func KTAConversionKongPluginKeyAuth(kongPlugin Plugin) *apisix.KeyAuth {
 	if len(keyName) > 0 {
 		var apisixKeyAuth apisix.KeyAuth
 		apisixKeyAuth.Header = keyName
-		//apisixKeyAuth.Query = keyName
+		apisixKeyAuth.Query = keyName
 		return &apisixKeyAuth
 	}
 	return nil

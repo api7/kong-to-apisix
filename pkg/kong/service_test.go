@@ -63,7 +63,7 @@ func TestGenerateApisixServiceUpstream(t *testing.T) {
 	assert.Equal(t, apisixConfig.Upstreams[0].Retries, kongConfigService.Retries)
 }
 
-func TestFindKongServiceByID(t *testing.T) {
+func TestFindKongServiceById(t *testing.T) {
 	var kongConfig Config
 	var kongConfigService01 Service
 	var kongConfigService02 Service
@@ -76,11 +76,11 @@ func TestFindKongServiceByID(t *testing.T) {
 	kongConfigService02.Name = "svc02"
 	kongConfig.Services = append(kongConfig.Services, kongConfigService01)
 	kongConfig.Services = append(kongConfig.Services, kongConfigService02)
-	kongConfigService, err := FindKongServiceByID(&kongConfig.Services, serviceID1)
+	kongConfigService, err := FindKongServiceById(&kongConfig.Services, serviceID1)
 	assert.Nil(t, err)
 	assert.Equal(t, kongConfigService.ID, kongConfigService01.ID)
 	assert.Equal(t, kongConfigService.Name, kongConfigService01.Name)
-	kongConfigService, err = FindKongServiceByID(&kongConfig.Services, serviceID2)
+	kongConfigService, err = FindKongServiceById(&kongConfig.Services, serviceID2)
 	assert.Nil(t, err)
 	assert.Equal(t, kongConfigService.ID, kongConfigService02.ID)
 	assert.Equal(t, kongConfigService.Name, kongConfigService02.Name)

@@ -3,92 +3,141 @@ package kong
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/api7/kong-to-apisix/pkg/apisix"
-	"github.com/api7/kong-to-apisix/pkg/utils"
+
+	uuid "github.com/satori/go.uuid"
 )
 
-func MigrateRoute(kongConfig *Config, configYamlAll *[]utils.YamlItem) (apisix.Routes, error) {
+func MigrateRoute(kongConfig *Config, apisixConfig *apisix.Config) error {
 	kongServices := kongConfig.Services
+	kongRoutes := kongConfig.Routes
 
-	var apisixRoutes apisix.Routes
-	i := 0
-	for _, s := range kongServices {
-		for _, r := range s.Routes {
-			i++
-			apisixRoute := &apisix.Route{
-				ID:        strconv.Itoa(i),
-				ServiceID: s.ID,
-				// TODO: need to check if it's the same
-				Priority: uint(r.RegexPriority),
-				Plugins:  apisix.Plugins{},
+	// Kong deck export
+	for ksIndex, kongService := range kongServices {
+		if len(kongService.Routes) <= 0 {
+			continue
+		}
+
+		for krIndex, kongRoute := range kongService.Routes {
+			kongRouteId := kongRoute.ID
+			if len(kongRouteId) <= 0 {
+				kongRouteId = uuid.NewV4().String()
+				kongConfig.Services[ksIndex].Routes[krIndex].ID = kongRouteId
+				kongRoute.ID = kongRouteId
 			}
-
-			if r.Name != "" {
-				apisixRoute.Name = r.Name
+			a6Routes := ConvertKongRouteToA6(kongService, kongRoute)
+			if len(a6Routes) <= 0 {
+				fmt.Printf("Kong route [ %s ] to APISIX conversion failure\n", kongRouteId)
+				continue
 			}
-
-			// TODO: need to tweak between different rules of apisix and kong later
-			if len(r.Paths) == 1 {
-				apisixRoute.URI = r.Paths[0] + "*"
-			} else {
-				var uris []string
-				for _, p := range r.Paths {
-					uris = append(uris, p+"*")
-				}
-				apisixRoute.URIs = uris
-			}
-
-			if len(r.Hosts) == 1 {
-				apisixRoute.Host = r.Hosts[0]
-			} else {
-				var hosts []string
-				for hostIndex := range r.Hosts {
-					hosts = append(hosts, r.Hosts[hostIndex])
-				}
-				apisixRoute.Hosts = hosts
-			}
-
-			// since proxy-rewrite could only support one line for regex-uri
-			// need to split it to several routes if match uris
-			if r.StripPath && apisixRoute.URI != "" {
-				proxyRewrite := addProxyRewrite(apisixRoute)
-				if proxyRewrite != nil {
-					apisixRoute.Plugins.ProxyRewrite = proxyRewrite
-				}
-			}
-
-			var methods []string
-			for methodIndex := range r.Methods {
-				methods = append(methods, r.Methods[methodIndex])
-			}
-			apisixRoute.Methods = methods
-
-			for _, p := range r.Plugins {
-				if !p.Enabled {
-					continue
-				}
-				switch p.Name {
-				case PluginKeyAuth:
-					apisixRoute.Plugins.KeyAuth = KTAConversionKongPluginKeyAuth(p)
-				case PluginProxyCache:
-					apisixRoute.Plugins.ProxyCache = KTAConversionKongPluginProxyCache(p)
-				case PluginRateLimiting:
-					apisixRoute.Plugins.LimitCount = KTAConversionKongPluginRateLimiting(p)
-				default:
-					fmt.Printf("Kong route [%s] plugin %s not supported by apisix yet\n", r.ID, p.Name)
-				}
-			}
-
-			apisixRoutes = append(apisixRoutes, *apisixRoute)
+			apisixConfig.Routes = append(apisixConfig.Routes, a6Routes...)
+			fmt.Printf("Kong service [ %s ] to APISIX conversion completed\n", kongRouteId)
 		}
 	}
 
-	return apisixRoutes, nil
+	// Kong config export
+	for krIndex, kongRoute := range kongRoutes {
+		kongRouteId := kongRoute.ID
+		// reset route id
+		if len(kongRouteId) <= 0 {
+			kongRouteId = uuid.NewV4().String()
+			kongConfig.Routes[krIndex].ID = kongRouteId
+		}
+
+		if len(kongRoute.ServiceID) <= 0 {
+			fmt.Printf("Kong route [ %s ] not setting service\n", kongRouteId)
+			continue
+		}
+
+		kongService, err := FindKongServiceById(&kongConfig.Services, kongRoute.ServiceID)
+		if err != nil {
+			fmt.Printf("Kong route [ %s ] mapping service not found\n", kongRouteId)
+			continue
+		}
+		a6Routes := ConvertKongRouteToA6(*kongService, kongRoute)
+		if len(a6Routes) <= 0 {
+			fmt.Printf("Kong route [ %s ] to APISIX conversion failure\n", kongRouteId)
+			continue
+		}
+		apisixConfig.Routes = append(apisixConfig.Routes, a6Routes...)
+		fmt.Printf("Kong service [ %s ] to APISIX conversion completed\n", kongRouteId)
+	}
+
+	fmt.Println("Kong to APISIX routes configuration conversion completed")
+	return nil
 }
 
-func addProxyRewrite(route *apisix.Route) *apisix.ProxyRewrite {
+func ConvertKongRouteToA6(kongService Service, kongRoute Route) apisix.Routes {
+	var a6Routes apisix.Routes
+	isPathGroup := len(kongRoute.Paths) > 1
+	for krpIndex, kongRoutePath := range kongRoute.Paths {
+		var a6Route apisix.Route
+		if isPathGroup {
+			a6Route.ID = kongRoute.ID + "-" + strconv.Itoa(krpIndex+1)
+			a6Route.Name = kongRoute.Name + "-" + strconv.Itoa(krpIndex+1)
+		} else {
+			a6Route.ID = kongRoute.ID
+			a6Route.Name = kongRoute.Name
+		}
+		a6Route.URI = kongRoutePath + "*"
+		a6Route.Hosts = kongRoute.Hosts
+		a6Route.Methods = kongRoute.Methods
+		a6Route.Priority = kongRoute.RegexPriority
+		a6Route.ServiceID = kongService.ID
+		proxyRewrite := GenerateProxyRewritePluginConfig(kongService.Path, kongRoutePath,
+			kongRoute.StripPath, kongRoute.PathHandling)
+		// mapping kong to apisix upstream request URI
+		a6Route.Plugins.ProxyRewrite = proxyRewrite
+
+		for _, kongRoutePlugin := range kongRoute.Plugins {
+			if !kongRoutePlugin.Enabled {
+				continue
+			}
+			switch kongRoutePlugin.Name {
+			case PluginKeyAuth:
+				a6Route.Plugins.KeyAuth = KTAConversionKongPluginKeyAuth(kongRoutePlugin)
+			case PluginProxyCache:
+				a6Route.Plugins.ProxyCache = KTAConversionKongPluginProxyCache(kongRoutePlugin)
+			case PluginRateLimiting:
+				a6Route.Plugins.LimitCount = KTAConversionKongPluginRateLimiting(kongRoutePlugin)
+			default:
+				fmt.Printf("Kong route [%s] plugin %s not supported by apisix yet\n", a6Route.ID,
+					kongRoutePlugin.Name)
+			}
+		}
+
+		a6Routes = append(a6Routes, a6Route)
+	}
+	return a6Routes
+}
+
+// GenerateProxyRewritePluginConfig Generate routing and forwarding rules
+// https://docs.konghq.com/gateway-oss/2.4.x/admin-api/#path-handling-algorithms
+func GenerateProxyRewritePluginConfig(servicePath string, routerPath string, stripPath bool,
+	pathHandling string) *apisix.ProxyRewrite {
+	if len(servicePath) == 0 {
+		servicePath = "/"
+	}
+
+	var pathRegex string
+	if stripPath {
+		pathRegex = fmt.Sprintf(`^%s/?(.*)`, routerPath)
+	} else {
+		pathRegex = `^/?(.*)`
+	}
+	pathRegex = strings.Replace(pathRegex, "//", "/", -1)
+
+	var pathPattern string
+	if pathHandling == "v1" {
+		pathPattern = fmt.Sprintf(`%s$1`, servicePath)
+	} else { // pathHandling == "v0"
+		pathPattern = fmt.Sprintf(`%s/$1`, servicePath)
+	}
+	pathPattern = strings.Replace(pathPattern, "//", "/", -1)
+
 	var proxyRewrite apisix.ProxyRewrite
-	proxyRewrite.RegexURI = []string{fmt.Sprintf(`^%s/?(.*)`, route.URI[:len(route.URI)-1]), "/$1"}
+	proxyRewrite.RegexURI = []string{pathRegex, pathPattern}
 	return &proxyRewrite
 }

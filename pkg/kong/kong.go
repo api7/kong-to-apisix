@@ -17,14 +17,12 @@ func Migrate(kongConfig *Config) (*apisix.Config, *[]utils.YamlItem, error) {
 		return nil, nil, err
 	}
 
-	if err := MigrateUpstream(kongConfig, apisixConfig); err != nil {
+	if err := MigrateRoute(kongConfig, apisixConfig); err != nil {
 		return nil, nil, err
 	}
 
-	if routes, err := MigrateRoute(kongConfig, &configYamlAll); err != nil {
+	if err := MigrateUpstream(kongConfig, apisixConfig); err != nil {
 		return nil, nil, err
-	} else {
-		apisixConfig.Routes = routes
 	}
 
 	if err := MigrateConsumer(kongConfig, apisixConfig); err != nil {
