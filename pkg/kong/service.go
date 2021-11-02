@@ -26,6 +26,22 @@ func MigrateService(kongConfig *Config, apisixConfig *apisix.Config) error {
 			upstreamID := GenerateApisixServiceUpstream(kongService, apisixConfig)
 			apisixService.UpstreamID = upstreamID
 		}
+		for _, kongServicePlugin := range kongService.Plugins {
+			if !kongServicePlugin.Enabled {
+				continue
+			}
+			switch kongServicePlugin.Name {
+			case PluginKeyAuth:
+				apisixService.Plugins.KeyAuth = KTAConversionKongPluginKeyAuth(kongServicePlugin)
+			case PluginProxyCache:
+				apisixService.Plugins.ProxyCache = KTAConversionKongPluginProxyCache(kongServicePlugin)
+			case PluginRateLimiting:
+				apisixService.Plugins.LimitCount = KTAConversionKongPluginRateLimiting(kongServicePlugin)
+			default:
+				fmt.Printf("Kong service [%s] plugin %s not supported by apisix yet\n", apisixService.ID,
+					kongServicePlugin.Name)
+			}
+		}
 		apisixServices = append(apisixServices, apisixService)
 		fmt.Printf("Kong service [ %s ] to APISIX conversion completed\n", kongServiceId)
 	}
