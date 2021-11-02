@@ -24,6 +24,50 @@ func TestMigrateService(t *testing.T) {
 	kongConfigService.ConnectTimeout = 1500
 	kongConfigService.ReadTimeout = 150
 	kongConfigService.WriteTimeout = 15
+
+	// KeyAuth
+	kongPluginKeyAuthConfig := make(Configuration)
+	kongPluginKeyAuthConfig["key_names"] = make([]interface{}, 1)
+	kongPluginKeyAuthConfigKeyNames := make([]interface{}, 1)
+	for i, v := range []string{"apikey"} {
+		kongPluginKeyAuthConfigKeyNames[i] = v
+	}
+	kongPluginKeyAuthConfig["key_names"] = kongPluginKeyAuthConfigKeyNames
+	// ProxyCache
+	kongPluginProxyCacheConfig := make(Configuration)
+	kongPluginProxyCacheConfigRequestMethod := make([]interface{}, 4)
+	kongPluginProxyCacheConfigRequestMethods := []string{"GET", "POST", "PUT", "DELETE"}
+	for i, v := range kongPluginProxyCacheConfigRequestMethods {
+		kongPluginProxyCacheConfigRequestMethod[i] = v
+	}
+	kongPluginProxyCacheConfig["request_method"] = kongPluginProxyCacheConfigRequestMethod
+	kongPluginProxyCacheConfigResponseCode := make([]interface{}, 3)
+	kongPluginProxyCacheConfigResponseCodes := []int{200, 204, 302}
+	for i, v := range kongPluginProxyCacheConfigResponseCodes {
+		kongPluginProxyCacheConfigResponseCode[i] = v
+	}
+	kongPluginProxyCacheConfig["response_code"] = kongPluginProxyCacheConfigResponseCode
+	// RateLimiting
+	kongPluginRateLimitingConfig := make(Configuration)
+	kongPluginRateLimitingConfig["second"] = 5
+	kongPluginRateLimitingConfig["policy"] = PluginRateLimitingPolicyLocal
+	kongConfigService.Plugins = append(kongConfigService.Plugins, Plugins{
+		{
+			Name:    "key-auth",
+			Enabled: true,
+			Config:  kongPluginKeyAuthConfig,
+		},
+		{
+			Name:    "proxy-cache",
+			Enabled: true,
+			Config:  kongPluginProxyCacheConfig,
+		},
+		{
+			Name:    "rate-limiting",
+			Enabled: true,
+			Config:  kongPluginRateLimitingConfig,
+		},
+	}...)
 	kongConfig.Services = append(kongConfig.Services, kongConfigService)
 	err := MigrateService(&kongConfig, &apisixConfig)
 	assert.NoError(t, err)
@@ -38,6 +82,28 @@ func TestMigrateService(t *testing.T) {
 	assert.Equal(t, apisixConfig.Upstreams[0].Timeout.Send, float32(0.015))
 	assert.Equal(t, apisixConfig.Upstreams[0].Scheme, kongConfigService.Protocol)
 	assert.Equal(t, apisixConfig.Upstreams[0].Retries, kongConfigService.Retries)
+	assert.Equal(t, apisixConfig.Services[0].Plugins.KeyAuth.Header,
+		kongConfigService.Plugins[0].Config["key_names"].([]interface{})[0].(string))
+	assert.Equal(t, apisixConfig.Services[0].Plugins.KeyAuth.Query,
+		kongConfigService.Plugins[0].Config["key_names"].([]interface{})[0].(string))
+	assert.Equal(t, apisixConfig.Services[0].Plugins.ProxyCache.CacheMethod[0],
+		kongConfigService.Plugins[1].Config["request_method"].([]interface{})[0].(string))
+	assert.Equal(t, apisixConfig.Services[0].Plugins.ProxyCache.CacheMethod[1],
+		kongConfigService.Plugins[1].Config["request_method"].([]interface{})[1].(string))
+	assert.Equal(t, apisixConfig.Services[0].Plugins.ProxyCache.CacheMethod[2],
+		kongConfigService.Plugins[1].Config["request_method"].([]interface{})[2].(string))
+	assert.Equal(t, apisixConfig.Services[0].Plugins.ProxyCache.CacheMethod[3],
+		kongConfigService.Plugins[1].Config["request_method"].([]interface{})[3].(string))
+	assert.Equal(t, apisixConfig.Services[0].Plugins.ProxyCache.CacheHttpStatus[0],
+		kongConfigService.Plugins[1].Config["response_code"].([]interface{})[0].(int))
+	assert.Equal(t, apisixConfig.Services[0].Plugins.ProxyCache.CacheHttpStatus[1],
+		kongConfigService.Plugins[1].Config["response_code"].([]interface{})[1].(int))
+	assert.Equal(t, apisixConfig.Services[0].Plugins.ProxyCache.CacheHttpStatus[2],
+		kongConfigService.Plugins[1].Config["response_code"].([]interface{})[2].(int))
+	assert.Equal(t, apisixConfig.Services[0].Plugins.LimitCount.Count,
+		kongConfigService.Plugins[2].Config["second"].(int))
+	assert.Equal(t, apisixConfig.Services[0].Plugins.LimitCount.TimeWindow, 1)
+	assert.Equal(t, apisixConfig.Services[0].Plugins.LimitCount.Policy, PluginRateLimitingPolicyLocal)
 }
 
 func TestGenerateApisixServiceUpstream(t *testing.T) {
