@@ -41,7 +41,30 @@ var _ = ginkgo.Describe("plugins", func() {
 		_, err = kongCli.Plugins().Create(createdPlugin)
 		gomega.Expect(err).To(gomega.BeNil())
 
+		// kong deck export mode data test
 		err = utils.TestMigrate(utils.TestKongDeckMode)
+		gomega.Expect(err).To(gomega.BeNil())
+
+		// first time to trigger rate limit
+		utils.Compare(&utils.CompareCase{
+			Path:              "/get/get",
+			CompareStatusCode: 200,
+		})
+
+		utils.Compare(&utils.CompareCase{
+			Path:              "/get/get",
+			CompareStatusCode: 429,
+		})
+
+		// wait till rate limit expire
+		time.Sleep(time.Second)
+		utils.Compare(&utils.CompareCase{
+			Path:              "/get/get",
+			CompareStatusCode: 200,
+		})
+
+		// kong config export mode data test
+		err = utils.TestMigrate(utils.TestKongConfigMode)
 		gomega.Expect(err).To(gomega.BeNil())
 
 		// first time to trigger rate limit
@@ -85,6 +108,7 @@ var _ = ginkgo.Describe("plugins", func() {
 		_, err = kongCli.Plugins().Create(createdPlugin)
 		gomega.Expect(err).To(gomega.BeNil())
 
+		// kong deck export mode data test
 		err = utils.TestMigrate(utils.TestKongDeckMode)
 		gomega.Expect(err).To(gomega.BeNil())
 
@@ -101,17 +125,22 @@ var _ = ginkgo.Describe("plugins", func() {
 		gomega.Ω(apisixCacheStatus).Should(gomega.Equal("HIT"))
 		gomega.Ω(kongCacheStatus).Should(gomega.Equal("Hit"))
 
-		/*
-			// currently apisix need to reload to make cache_ttl in config.yaml works, so skip this test for now
-			time.Sleep(2 * time.Second)
-			apisixResp, kongResp = utils.GetResps(&utils.CompareCase{
-				Path: "/get/get",
-			})
-			apisixCacheStatus = apisixResp.Header.Get("Apisix-Cache-Status")
-			kongCacheStatus = kongResp.Header.Get("X-Cache-Status")
-			gomega.Ω(kongCacheStatus).Should(gomega.Equal("Miss"))
-			gomega.Ω(apisixCacheStatus).Should(gomega.Equal("EXPIRED"))
-		*/
+		// kong config export mode data test
+		err = utils.TestMigrate(utils.TestKongConfigMode)
+		gomega.Expect(err).To(gomega.BeNil())
+
+		// first time to trigger cache
+		utils.Compare(&utils.CompareCase{
+			Path: "/get/get",
+		})
+
+		apisixResp, kongResp = utils.GetResps(&utils.CompareCase{
+			Path: "/get/get",
+		})
+		apisixCacheStatus = apisixResp.Header.Get("Apisix-Cache-Status")
+		kongCacheStatus = kongResp.Header.Get("X-Cache-Status")
+		gomega.Ω(apisixCacheStatus).Should(gomega.Equal("HIT"))
+		gomega.Ω(kongCacheStatus).Should(gomega.Equal("Hit"))
 	})
 
 	ginkgo.It("default key auth", func() {
@@ -141,7 +170,25 @@ var _ = ginkgo.Describe("plugins", func() {
 		_, err = kongCli.Consumers().CreatePluginConfig(kongConsumer.Id, "key-auth", "{\"key\": \"apikey\"}")
 		gomega.Expect(err).To(gomega.BeNil())
 
+		// kong deck export mode data test
 		err = utils.TestMigrate(utils.TestKongDeckMode)
+		gomega.Expect(err).To(gomega.BeNil())
+
+		// without key
+		utils.Compare(&utils.CompareCase{
+			Path:              "/get/get",
+			CompareStatusCode: 401,
+		})
+
+		// with key
+		utils.Compare(&utils.CompareCase{
+			Path:              "/get/get",
+			Headers:           map[string]string{"apikey": "apikey"},
+			CompareStatusCode: 200,
+		})
+
+		// kong config export mode data test
+		err = utils.TestMigrate(utils.TestKongConfigMode)
 		gomega.Expect(err).To(gomega.BeNil())
 
 		// without key
