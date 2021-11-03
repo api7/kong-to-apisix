@@ -45,7 +45,8 @@ var _ = ginkgo.Describe("upstream", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		gomega.Expect(err).To(gomega.BeNil())
 
-		err = utils.TestMigrate()
+		// kong deck export mode data test
+		err = utils.TestMigrate(utils.TestKongDeckMode)
 		gomega.Expect(err).To(gomega.BeNil())
 
 		apisixRespMap := make(map[string]int)
@@ -53,8 +54,26 @@ var _ = ginkgo.Describe("upstream", func() {
 		cc := &utils.CompareCase{Path: "/get/get"}
 		for range [10]int{} {
 			apisixResp, kongResp := utils.GetBodys(cc)
-			apisixRespMap[string(apisixResp)]++
-			kongRespMap[string(kongResp)]++
+			apisixRespMap[apisixResp]++
+			kongRespMap[kongResp]++
+		}
+		for _, count := range apisixRespMap {
+			gomega.Expect(count > 0).To(gomega.BeTrue())
+		}
+		for _, count := range kongRespMap {
+			gomega.Expect(count > 0).To(gomega.BeTrue())
+		}
+
+		// kong config export mode data test
+		err = utils.TestMigrate(utils.TestKongConfigMode)
+		gomega.Expect(err).To(gomega.BeNil())
+
+		apisixRespMap = make(map[string]int)
+		kongRespMap = make(map[string]int)
+		for range [10]int{} {
+			apisixResp, kongResp := utils.GetBodys(cc)
+			apisixRespMap[apisixResp]++
+			kongRespMap[kongResp]++
 		}
 		for _, count := range apisixRespMap {
 			gomega.Expect(count > 0).To(gomega.BeTrue())

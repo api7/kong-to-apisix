@@ -31,7 +31,17 @@ var _ = ginkgo.Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		gomega.Expect(err).To(gomega.BeNil())
 
-		err = utils.TestMigrate()
+		// kong deck export mode data test
+		err = utils.TestMigrate(utils.TestKongDeckMode)
+		gomega.Expect(err).To(gomega.BeNil())
+
+		utils.Compare(&utils.CompareCase{
+			Path:        "/get/get",
+			CompareBody: true,
+		})
+
+		// kong config export mode data test
+		err = utils.TestMigrate(utils.TestKongConfigMode)
 		gomega.Expect(err).To(gomega.BeNil())
 
 		utils.Compare(&utils.CompareCase{
@@ -53,7 +63,17 @@ var _ = ginkgo.Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		gomega.Expect(err).To(gomega.BeNil())
 
-		err = utils.TestMigrate()
+		// kong deck export mode data test
+		err = utils.TestMigrate(utils.TestKongDeckMode)
+		gomega.Expect(err).To(gomega.BeNil())
+
+		utils.Compare(&utils.CompareCase{
+			Path:        "/get",
+			CompareBody: true,
+		})
+
+		// kong config export mode data test
+		err = utils.TestMigrate(utils.TestKongConfigMode)
 		gomega.Expect(err).To(gomega.BeNil())
 
 		utils.Compare(&utils.CompareCase{
@@ -75,7 +95,23 @@ var _ = ginkgo.Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		gomega.Expect(err).To(gomega.BeNil())
 
-		err = utils.TestMigrate()
+		// kong deck export mode data test
+		err = utils.TestMigrate(utils.TestKongDeckMode)
+		gomega.Expect(err).To(gomega.BeNil())
+
+		utils.Compare(&utils.CompareCase{
+			Path:              "/get/get",
+			CompareStatusCode: http.StatusNotFound,
+		})
+
+		utils.Compare(&utils.CompareCase{
+			Path:        "/get/get",
+			Headers:     map[string]string{"Host": "foo.com"},
+			CompareBody: true,
+		})
+
+		// kong config export mode data test
+		err = utils.TestMigrate(utils.TestKongConfigMode)
 		gomega.Expect(err).To(gomega.BeNil())
 
 		utils.Compare(&utils.CompareCase{

@@ -1,12 +1,20 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 
 	"github.com/api7/kong-to-apisix/pkg/apisix"
 	"github.com/api7/kong-to-apisix/pkg/kong"
@@ -23,10 +31,15 @@ var (
 	UpstreamAddr2        = "http://172.17.0.1:7025"
 	ApisixConfigYamlPath = "../../repos/apisix-docker/example/apisix_conf/config.yaml"
 
-	apisixAddr         = "http://127.0.0.1:9080"
-	kongAddr           = "http://127.0.0.1:8000"
-	kongAdminAddr      = "http://127.0.0.1:8001"
-	apisixDeclYamlPath = "../../repos/apisix-docker/example/apisix_conf/apisix.yaml"
+	apisixAddr            = "http://127.0.0.1:9080"
+	kongAddr              = "http://127.0.0.1:8000"
+	kongAdminAddr         = "http://127.0.0.1:8001"
+	apisixDeclYamlPath    = "../../repos/apisix-docker/example/apisix_conf/apisix.yaml"
+	kongDeclYamlPath      = "../../repos/kong-docker/compose/kong_conf/kong.yml"
+	kongContainerName     = "/kong"
+	kongDumpConfigCommand = []string{"/bin/sh", "-c", "rm -f kong.yml && kong config db_export"}
+	TestKongDeckMode      = "kong/deck"
+	TestKongConfigMode    = "kong/config"
 )
 
 type TestCase struct {
@@ -42,7 +55,7 @@ type CompareCase struct {
 	CompareStatusCode int
 }
 
-func GetKongConfig() ([]byte, error) {
+func GetKongDeckExportData() ([]byte, error) {
 	tmpStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
@@ -58,8 +71,92 @@ func GetKongConfig() ([]byte, error) {
 	return out, nil
 }
 
-func TestMigrate() error {
-	kongConfigBytes, err := GetKongConfig()
+func GetKongConfigExportData() ([]byte, error) {
+	err := generateKongConfig()
+	if err != nil {
+		return nil, err
+	}
+	out, err := ioutil.ReadFile(kongDeclYamlPath)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func generateKongConfig() error {
+	var kongContainerID string
+	ctx := context.Background()
+
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+
+	if err != nil {
+		return err
+	}
+
+	cli.NegotiateAPIVersion(ctx)
+
+	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, container := range containers {
+		if container.Names[0] == kongContainerName {
+			kongContainerID = container.ID
+		}
+	}
+
+	config := types.ExecConfig{
+		AttachStdin:  true,
+		AttachStderr: true,
+		AttachStdout: true,
+		Tty:          true,
+		Cmd:          kongDumpConfigCommand,
+	}
+
+	exec, err := cli.ContainerExecCreate(ctx, kongContainerID, config)
+	if err != nil {
+		return err
+	}
+
+	resp, err := cli.ContainerExecAttach(ctx, exec.ID, types.ExecStartCheck{})
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		err = resp.Conn.Close()
+		if err != nil {
+			log.Panic(err)
+		}
+		err = cli.Close()
+		if err != nil {
+			log.Panic(err)
+		}
+	}()
+
+	buf := make([]byte, 1024)
+	var n int
+	n, err = resp.Reader.Read(buf)
+	if err != nil && err != io.EOF {
+		return err
+	}
+	if len(buf[:n]) > 0 {
+		var sb strings.Builder
+		sb.Write(buf[:n])
+		return errors.New(sb.String())
+	}
+	return nil
+}
+
+func TestMigrate(mode string) error {
+	var err error
+	var kongConfigBytes []byte
+	if mode == TestKongConfigMode {
+		kongConfigBytes, err = GetKongConfigExportData()
+	} else {
+		kongConfigBytes, err = GetKongDeckExportData()
+	}
 	if err != nil {
 		return err
 	}
