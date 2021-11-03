@@ -19,6 +19,11 @@ fetch_docker_repos() {
 
     if [[ ! -d ${BASEDIR}"/repos/kong-docker" ]]; then
         git clone --depth=1 --branch 2.5.1 https://github.com/Kong/docker-kong.git ${BASEDIR}/repos/kong-docker
+        mkdir -p ${BASEDIR}/repos/kong-docker/compose/kong_conf
+        chmod -R 777 ${BASEDIR}/repos/kong-docker/compose/kong_conf
+        sed -i '/user:/a \    working_dir: /config/kong' ${BASEDIR}/repos/kong-docker/compose/docker-compose.yml
+        sed -i '/user:/a \    container_name: kong' ${BASEDIR}/repos/kong-docker/compose/docker-compose.yml
+        sed -i '/security_opt:/i \      - ./kong_conf:/config/kong:rw' ${BASEDIR}/repos/kong-docker/compose/docker-compose.yml
     fi
 }
 

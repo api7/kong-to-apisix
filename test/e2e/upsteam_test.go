@@ -45,7 +45,7 @@ var _ = ginkgo.Describe("upstream", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		gomega.Expect(err).To(gomega.BeNil())
 
-		err = utils.TestMigrate()
+		err = utils.TestMigrate(utils.TestKongDeckMode)
 		gomega.Expect(err).To(gomega.BeNil())
 
 		apisixRespMap := make(map[string]int)

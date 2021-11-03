@@ -41,7 +41,7 @@ var _ = ginkgo.Describe("plugins", func() {
 		_, err = kongCli.Plugins().Create(createdPlugin)
 		gomega.Expect(err).To(gomega.BeNil())
 
-		err = utils.TestMigrate()
+		err = utils.TestMigrate(utils.TestKongDeckMode)
 		gomega.Expect(err).To(gomega.BeNil())
 
 		// first time to trigger rate limit
@@ -85,7 +85,7 @@ var _ = ginkgo.Describe("plugins", func() {
 		_, err = kongCli.Plugins().Create(createdPlugin)
 		gomega.Expect(err).To(gomega.BeNil())
 
-		err = utils.TestMigrate()
+		err = utils.TestMigrate(utils.TestKongDeckMode)
 		gomega.Expect(err).To(gomega.BeNil())
 
 		// first time to trigger cache
@@ -141,7 +141,7 @@ var _ = ginkgo.Describe("plugins", func() {
 		_, err = kongCli.Consumers().CreatePluginConfig(kongConsumer.Id, "key-auth", "{\"key\": \"apikey\"}")
 		gomega.Expect(err).To(gomega.BeNil())
 
-		err = utils.TestMigrate()
+		err = utils.TestMigrate(utils.TestKongDeckMode)
 		gomega.Expect(err).To(gomega.BeNil())
 
 		// without key

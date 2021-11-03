@@ -31,7 +31,7 @@ var _ = ginkgo.Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		gomega.Expect(err).To(gomega.BeNil())
 
-		err = utils.TestMigrate()
+		err = utils.TestMigrate(utils.TestKongDeckMode)
 		gomega.Expect(err).To(gomega.BeNil())
 
 		utils.Compare(&utils.CompareCase{
@@ -53,7 +53,7 @@ var _ = ginkgo.Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		gomega.Expect(err).To(gomega.BeNil())
 
-		err = utils.TestMigrate()
+		err = utils.TestMigrate(utils.TestKongDeckMode)
 		gomega.Expect(err).To(gomega.BeNil())
 
 		utils.Compare(&utils.CompareCase{
@@ -75,7 +75,7 @@ var _ = ginkgo.Describe("route", func() {
 		_, err = kongCli.Routes().Create(createdRoute)
 		gomega.Expect(err).To(gomega.BeNil())
 
-		err = utils.TestMigrate()
+		err = utils.TestMigrate(utils.TestKongDeckMode)
 		gomega.Expect(err).To(gomega.BeNil())
 
 		utils.Compare(&utils.CompareCase{
