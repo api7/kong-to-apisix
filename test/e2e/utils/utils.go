@@ -29,6 +29,7 @@ import (
 var (
 	UpstreamAddr         = "http://172.17.0.1:7024"
 	UpstreamAddr2        = "http://172.17.0.1:7025"
+	UpstreamAddr7026     = "http://172.17.0.1:7026"
 	ApisixConfigYamlPath = "../../repos/apisix-docker/example/apisix_conf/config.yaml"
 
 	apisixAddr            = "http://127.0.0.1:9080"
@@ -38,6 +39,8 @@ var (
 	kongDeclYamlPath      = "../../repos/kong-docker/compose/kong_conf/kong.yml"
 	kongContainerName     = "/kong"
 	kongDumpConfigCommand = []string{"/bin/sh", "-c", "rm -f kong.yml && kong config db_export"}
+	KongAdminAddress      = "http://127.0.0.1:8001"
+	KongAdminRouteURI     = "/routes"
 	TestKongDeckMode      = "kong/deck"
 	TestKongConfigMode    = "kong/config"
 )

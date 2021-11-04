@@ -79,5 +79,5 @@ fi
 if [ ! -z "$1" ]; then
     echo "set upstream"
     docker container inspect upstream > /dev/null 2>&1 \
-    || docker run -itd --name upstream -v $(pwd)/examples/conf:/etc/nginx/conf.d -p 7024:7024 -p 7025:7025 openresty/openresty:alpine
+    || docker run -itd --name upstream -v $(pwd)/examples/conf:/etc/nginx/conf.d -p 7024:7024 -p 7025:7025 -p 7026:7026 openresty/openresty:alpine
 fi
