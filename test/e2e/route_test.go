@@ -267,8 +267,8 @@ var _ = ginkgo.Describe("route", func() {
 		for _, testRoute := range testRoutes {
 			// The gokong project cannot complete the construction of strip_path and path_handling parameters,
 			// and realizes the creation of routing functions separately
-			_, err := utils.CreateRoute(testRoute.Route)
-			gomega.Expect(err).To(gomega.BeNil())
+			ok, err := utils.CreateRoute(testRoute.Route)
+			gomega.Expect(ok).To(gomega.BeTrue())
 			gomega.Expect(err).To(gomega.BeNil())
 			// kong deck export mode data test
 			err = utils.TestMigrate(utils.TestKongDeckMode)
