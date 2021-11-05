@@ -6,14 +6,16 @@
    - APISIX docker compose guide: https://github.com/apache/apisix-docker#quickstart-via-docker-compose
    - Kong docker compose guide: https://github.com/Kong/docker-kong/tree/master/compose
 
-2. Dump Kong Configuration with Deck. See https://docs.konghq.com/deck/1.7.x/guides/backup-restore/ for details.
+2. Dump Kong Configuration with `Deck` or `CLI`, for detailed usage, please refer to:
+   - Kong Deck : https://docs.konghq.com/deck/1.7.x/guides/backup-restore/
+   - Kong CLI Config Export: https://docs.konghq.com/gateway-oss/2.4.x/cli/#kong-config
 
 3. Run Kong-To-APISIX, and it would generate `apisix.yaml` as declarative configuration file for APISIX.
 
    ```shell
    make build
    export KONG_YAML_PATH="/PATH/TO/YOUR/Kong.yaml"
-   ./bin/kong2apisix
+   ./bin/kong-to-apisix
    ```
 
 4. Configure APISIX using `apisix.yaml` by move it to `/PATH/TO/APISIX/conf/apisix.yaml`. Add the following to `config.yaml` at `/PATH/TO/APISIX/conf/config.yaml`:
