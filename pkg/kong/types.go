@@ -63,7 +63,7 @@ type Route struct {
 	Headers                 map[string][]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 	HTTPSRedirectStatusCode int                 `json:"https_redirect_status_code,omitempty" yaml:"https_redirect_status_code,omitempty"`
 	RegexPriority           uint                `json:"regex_priority,omitempty" yaml:"regex_priority,omitempty"`
-	StripPath               bool                `json:"strip_path,omitempty" yaml:"strip_path,omitempty"`
+	StripPath               bool                `json:"strip_path" yaml:"strip_path"`
 	PathHandling            string              `json:"path_handling,omitempty" yaml:"path_handling,omitempty"`
 	PreserveHost            bool                `json:"preserve_host,omitempty" yaml:"preserve_host,omitempty"`
 	RequestBuffering        bool                `json:"request_buffering,omitempty" yaml:"request_buffering,omitempty"`
