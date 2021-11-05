@@ -1,4 +1,4 @@
-name: E2E Test
+name: Unit & E2E Test
 
 on:
   push:
@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  e2e:
+  tests:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
